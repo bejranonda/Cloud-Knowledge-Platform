@@ -1,23 +1,18 @@
-"""File system watcher that drives versioning + Hermes dispatch.
-
-One Observer covers all project vaults. Events are routed by the first path
-segment under `vaults_root` which is the project slug.
-"""
+"""File system watcher — drives versioning, search reindex, and Hermes queue."""
 from __future__ import annotations
 
 import logging
-import threading
 from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from . import hermes, projects, versioning
+from . import events, hermes, projects, search, versioning
 from .config import settings
 
 log = logging.getLogger(__name__)
 
-_IGNORED_PREFIXES = (".git", ".obsidian", ".trash", ".registry")
+_IGNORED = (".git", ".obsidian", ".trash", ".registry")
 
 
 class _Handler(FileSystemEventHandler):
@@ -29,42 +24,36 @@ class _Handler(FileSystemEventHandler):
         except ValueError:
             return
         parts = rel.parts
-        if not parts or any(parts[0].startswith(p) for p in _IGNORED_PREFIXES):
+        if not parts or parts[0].startswith(_IGNORED):
             return
         slug = parts[0]
-        if len(parts) > 1 and parts[1].startswith(_IGNORED_PREFIXES):
+        if len(parts) > 1 and parts[1].startswith(_IGNORED):
             return
 
         proj = projects.get(slug)
         if proj is None:
             return
 
+        abs_path = Path(event.src_path)
+
+        if str(abs_path).endswith(".md"):
+            search.update_file(proj.vault_dir, abs_path)
+
         versioning.schedule_commit(
             proj.vault_dir, reason=f"sync: {rel.as_posix()} ({event.event_type})"
         )
+        events.emit("fs", {
+            "project": slug, "path": rel.relative_to(slug).as_posix(),
+            "op": event.event_type,
+        })
 
-        # new/modified Info → Hermes
         if (
             event.event_type in ("created", "modified")
             and len(parts) >= 3
             and parts[1] == "inbox"
             and parts[-1].endswith(".md")
         ):
-            src = Path(event.src_path)
-            threading.Thread(
-                target=_run_hermes, args=(proj, src), daemon=True
-            ).start()
-
-
-def _run_hermes(proj: projects.Project, src: Path) -> None:
-    if not src.exists():
-        return
-    job = hermes.dispatch(proj.slug, proj.vault_dir, src)
-    if job.ok and job.produced:
-        versioning.schedule_commit(
-            proj.vault_dir,
-            reason=f"hermes: {src.name} -> {', '.join(job.produced)}",
-        )
+            hermes.enqueue(slug, proj.vault_dir, abs_path)
 
 
 _observer: Observer | None = None
@@ -75,6 +64,8 @@ def start() -> None:
     if _observer is not None:
         return
     settings.vaults_root.mkdir(parents=True, exist_ok=True)
+    for p in projects.list_projects():
+        search.reindex(p.vault_dir)
     obs = Observer()
     obs.schedule(_Handler(), str(settings.vaults_root), recursive=True)
     obs.start()

@@ -57,17 +57,26 @@
 4. If the file landed under `inbox/`, Hermes dispatcher runs; output written to `knowledge/` which re-triggers steps 2–3 → commit `hermes: knowledge for <file>`.
 5. Dashboard SSE stream pushes the new commit + Hermes job to any open browser.
 
-## 4. Why CouchDB over WebDAV
+## 4. Sync paths: LiveSync (primary) vs. WebDAV (alternate)
 
-- LiveSync is transactional and resumable; WebDAV (Remotely Save) is polling + full-file PUTs.
-- Conflict resolution is native (document revisions).
-- Mobile-tolerant: background sync continues on flaky networks.
-- Tradeoff: one extra process to run. Mitigated by docker-compose.
+Two first-class options; users pick per-project:
 
-WebDAV remains a supported fallback for read-only mirror clients (see `docs/known-issues.md`).
+- **Self-hosted LiveSync (CouchDB)** — real-time, E2E encrypted, conflict-resolving, mobile-tolerant.
+- **WebDAV endpoint at `/webdav/{project}/`** — built into this backend (`backend/app/webdav.py`). Obsidian *Remotely Save* points directly here; no CouchDB required. Every write from WebDAV also triggers versioning + search reindex + SSE event, so the two paths are interchangeable from the backend's perspective.
+
+## 5. Obsidian bridge
+
+The Ubuntu server has Obsidian installed. We do not drive the GUI; instead
+`backend/app/obsidian_bridge.py` reads `<vault>/.obsidian/*.json` (workspace,
+starred/bookmarks, graph settings, enabled plugins, daily-notes,
+templates) and exposes them via `/api/projects/{slug}/obsidian/*`. The
+Web-App uses this to show recent files, starred items, and plugin state
+without duplicating Obsidian's data model.
 
 ## 5. Security boundaries
 
 - CouchDB bound to localhost, reverse-proxied by Caddy/Nginx with HTTPS + Basic Auth per project user.
 - Backend runs as unprivileged user; Hermes invoked with a restricted working dir.
+- Admin mutations (create project, write/delete/move note, restore, Hermes retrigger, WebDAV writes) require `Authorization: Bearer <CKP_ADMIN_TOKEN>` when the env var is set. WebDAV additionally accepts the same token as HTTP Basic password.
+- SSE stream (`/api/events`) is read-only and carries fs / hermes / project events.
 - Git repos are local only by default; optional `git push` to private remote is per-project config.

@@ -43,3 +43,28 @@ def build(vault_dir: Path) -> dict:
                 resolved_edges.append({**e, "dangling": True})
 
     return {"nodes": nodes, "edges": resolved_edges}
+
+
+def backlinks(vault_dir: Path, target_rel: str) -> list[dict]:
+    """Return notes that reference `target_rel` (path without .md also accepted)."""
+    target_id = target_rel[:-3] if target_rel.endswith(".md") else target_rel
+    target_name = Path(target_id).name
+    results: list[dict] = []
+    for md in vault_dir.rglob("*.md"):
+        rel = md.relative_to(vault_dir)
+        if any(part.startswith(".") for part in rel.parts):
+            continue
+        try:
+            text = md.read_text(errors="ignore")
+        except OSError:
+            continue
+        hits: list[str] = []
+        for m in _WIKILINK_RE.finditer(text):
+            ref = m.group(1).strip()
+            if ref == target_id or ref == target_name:
+                start = max(0, m.start() - 60)
+                end = min(len(text), m.end() + 60)
+                hits.append(text[start:end].replace("\n", " "))
+        if hits:
+            results.append({"path": rel.as_posix(), "contexts": hits})
+    return results

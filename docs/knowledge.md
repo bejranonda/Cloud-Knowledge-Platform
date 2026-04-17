@@ -33,6 +33,23 @@ vaults/<project>/
 - Node id = relative path without extension.
 - Cached in-memory; invalidated per project on any commit touching `.md`.
 
+## Admin auth
+
+- Set `CKP_ADMIN_TOKEN=<long-random>` in the backend env to enable.
+- Dashboard stores the token in `localStorage` (via the 🔑 button in the header) and sends `Authorization: Bearer …` on mutating calls.
+- WebDAV clients send the same token as the HTTP Basic password (username is ignored).
+- `/api/health` reports `auth_required: true|false` so the UI can prompt on first load.
+
+## SSE event bus
+
+- `GET /api/events` emits: `fs` (project/path/op), `hermes` (status transitions), `project` (created). Keepalive comment every 20 s.
+- The frontend re-fetches the tree and the open note when a matching `fs` event arrives and the buffer is clean.
+
+## WebDAV vs LiveSync
+
+- Both paths terminate in the same vault dir and go through the same watcher → search + versioning + SSE pipeline.
+- Choose LiveSync for real-time + E2E + mobile tolerance; WebDAV for simplicity or when a client can't run LiveSync.
+
 ## Multi-project isolation boundaries
 
 | Layer | Mechanism |

@@ -15,13 +15,21 @@ Plugin: **Self-hosted LiveSync** by vrtmrz (Community Plugins → search "Self-h
 4. **End-to-end encryption**: strongly recommended. Generate the passphrase in the Web-App; all devices of the same project must share it.
 5. First run: tap **Initialize database** (only on the first device) then **Replicate** on every other device.
 
-## Fallback: Remotely Save (WebDAV)
+## Alternate: Remotely Save (WebDAV, built into this backend)
 
-Use only for read-only mirror or where LiveSync is blocked:
+This server speaks WebDAV directly at `/webdav/<project-slug>/` — no CouchDB
+needed. Use this when LiveSync is blocked, or as the primary sync for
+lightweight devices.
 
-1. Install **Remotely Save**.
-2. Choose *WebDAV*, point to `https://<your-server>/webdav/<project-slug>`.
-3. Enable *Sync on startup*.
+1. Install **Remotely Save** in Obsidian.
+2. Service: **WebDAV**.
+3. Address: `https://<your-server>/webdav/<project-slug>/`
+4. Username: anything (e.g. `admin`).
+5. Password: your `CKP_ADMIN_TOKEN` (the backend accepts the same token via HTTP Basic).
+6. Enable *Sync on startup* and *Sync every N minutes*.
+
+All WebDAV writes are versioned in Git and re-indexed for search the same
+way LiveSync writes are.
 
 ## Device checklist
 

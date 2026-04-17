@@ -109,6 +109,53 @@ def history(vault_dir: Path, limit: int = 50) -> list[dict]:
     return commits
 
 
+def file_history(vault_dir: Path, rel_path: str, limit: int = 50) -> list[dict]:
+    """History restricted to one file."""
+    if not (vault_dir / ".git").exists():
+        return []
+    fmt = "%H%x1f%ct%x1f%an%x1f%s"
+    out = subprocess.run(
+        ["git", "log", f"-n{limit}", f"--pretty=format:{fmt}", "--", rel_path],
+        cwd=vault_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    commits = []
+    for line in out.stdout.splitlines():
+        if not line:
+            continue
+        h, ts, author, msg = line.split("\x1f", 3)
+        commits.append({"hash": h, "ts": int(ts), "author": author, "msg": msg})
+    return commits
+
+
+def diff(vault_dir: Path, commit: str, rel_path: str | None = None) -> str:
+    """Unified diff for one commit, optionally scoped to a path."""
+    cmd = ["git", "show", "--format=", "--no-color", commit]
+    if rel_path:
+        cmd += ["--", rel_path]
+    out = subprocess.run(cmd, cwd=vault_dir, check=False, capture_output=True, text=True)
+    return out.stdout
+
+
+def restore(vault_dir: Path, commit: str, rel_path: str) -> bool:
+    """Restore `rel_path` to its state at `commit` as a new commit. Returns True on success."""
+    content = show_at(vault_dir, commit, rel_path)
+    if content is None:
+        return False
+    target = vault_dir / rel_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    subprocess.run(["git", "add", "--", rel_path], cwd=vault_dir, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", f"restore: {rel_path} -> {commit[:8]}"],
+        cwd=vault_dir,
+        check=False,
+    )
+    return True
+
+
 def show_at(vault_dir: Path, commit: str, rel_path: str) -> str | None:
     """Return file contents at a given commit, or None if absent."""
     try:

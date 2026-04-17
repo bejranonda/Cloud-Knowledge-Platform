@@ -8,34 +8,72 @@
 </head>
 <body>
   <header>
-    <h1>Cloud Knowledge Platform</h1>
-    <nav>
-      <button data-tab="projects" class="active">Projects</button>
-      <button data-tab="sync">Sync</button>
-      <button data-tab="notes">Notes</button>
-      <button data-tab="graph">Graph</button>
-      <button data-tab="history">History</button>
-      <button data-tab="hermes">Hermes</button>
+    <div class="brand">CKP</div>
+    <select id="project-select" aria-label="Project"></select>
+    <input id="search-input" placeholder="Search notes…  (Ctrl+K)" autocomplete="off" />
+    <div class="spacer"></div>
+    <button id="new-note-btn" title="New note">＋</button>
+    <button id="token-btn" title="Admin token">🔑</button>
+    <nav class="views">
+      <button data-view="editor" class="active">Editor</button>
+      <button data-view="graph">Graph</button>
+      <button data-view="tags">Tags</button>
+      <button data-view="sync">Sync</button>
+      <button data-view="history">History</button>
+      <button data-view="hermes">Hermes</button>
+      <button data-view="projects">Projects</button>
     </nav>
-    <div class="project-picker">
-      <label>Project:
-        <select id="project-select"></select>
-      </label>
-    </div>
   </header>
 
-  <main>
-    <section id="projects" class="tab active">
-      <h2>Projects</h2>
-      <table id="projects-table"><thead><tr><th>Slug</th><th>Name</th></tr></thead><tbody></tbody></table>
-      <form id="new-project-form">
-        <input name="slug" placeholder="slug-like-this" required pattern="[a-z0-9][a-z0-9-]{1,48}" />
-        <input name="display_name" placeholder="Display name" required />
-        <button>Create project</button>
-      </form>
+  <div id="search-results" class="popover" hidden></div>
+
+  <main id="app">
+
+    <!-- Editor view: three-pane Obsidian-like layout -->
+    <section id="view-editor" class="view active editor-grid">
+      <aside class="tree-pane">
+        <div class="pane-head">
+          <span>Files</span>
+          <button id="refresh-tree" title="Refresh">↻</button>
+        </div>
+        <div id="tree"></div>
+      </aside>
+
+      <section class="edit-pane">
+        <div class="pane-head">
+          <input id="note-path" placeholder="notes/new-note.md" spellcheck="false" />
+          <button id="save-note">Save</button>
+          <button id="delete-note" class="ghost">Delete</button>
+          <label class="toggle"><input type="checkbox" id="preview-toggle" checked /> Preview</label>
+        </div>
+        <div class="editor-split">
+          <textarea id="note-editor" spellcheck="false" placeholder="# Start writing…
+
+Use [[wikilinks]] and #tags."></textarea>
+          <div id="note-preview" class="markdown"></div>
+        </div>
+      </section>
+
+      <aside class="side-pane">
+        <div class="pane-head"><span>Backlinks</span></div>
+        <div id="backlinks" class="list"></div>
+        <div class="pane-head"><span>Tags</span></div>
+        <div id="note-tags" class="chips"></div>
+        <div class="pane-head"><span>File history</span></div>
+        <div id="file-history" class="list"></div>
+      </aside>
     </section>
 
-    <section id="sync" class="tab">
+    <section id="view-graph" class="view">
+      <canvas id="graph-canvas"></canvas>
+    </section>
+
+    <section id="view-tags" class="view pad">
+      <h2>Tags</h2>
+      <div id="tag-browser"></div>
+    </section>
+
+    <section id="view-sync" class="view pad">
       <h2>Connection monitor</h2>
       <table id="sync-table">
         <thead><tr><th>Project</th><th>Device</th><th>Last doc</th><th>Last seen</th></tr></thead>
@@ -43,40 +81,37 @@
       </table>
     </section>
 
-    <section id="notes" class="tab">
-      <h2>Notes</h2>
-      <div class="split">
-        <ul id="notes-list"></ul>
-        <div class="editor">
-          <input id="note-path" placeholder="notes/new-note.md" />
-          <textarea id="note-editor" rows="24"></textarea>
-          <button id="save-note">Save</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="graph" class="tab">
-      <h2>Graph</h2>
-      <canvas id="graph-canvas" width="960" height="560"></canvas>
-    </section>
-
-    <section id="history" class="tab">
-      <h2>History</h2>
+    <section id="view-history" class="view pad">
+      <h2>Project history</h2>
       <table id="history-table">
-        <thead><tr><th>When</th><th>Author</th><th>Message</th><th>Hash</th></tr></thead>
+        <thead><tr><th>When</th><th>Author</th><th>Message</th><th>Hash</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+      <pre id="diff-view" class="diff" hidden></pre>
     </section>
 
-    <section id="hermes" class="tab">
+    <section id="view-hermes" class="view pad">
       <h2>Hermes jobs</h2>
       <table id="hermes-table">
-        <thead><tr><th>Started</th><th>Project</th><th>Source</th><th>OK</th><th>Produced</th></tr></thead>
+        <thead><tr><th>Started</th><th>Project</th><th>Source</th><th>Status</th><th>Attempts</th><th>Produced</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
+
+    <section id="view-projects" class="view pad">
+      <h2>Projects</h2>
+      <table id="projects-table"><thead><tr><th>Slug</th><th>Name</th></tr></thead><tbody></tbody></table>
+      <form id="new-project-form">
+        <input name="slug" placeholder="slug-like-this" required pattern="[a-z0-9][a-z0-9-]{1,48}" />
+        <input name="display_name" placeholder="Display name" required />
+        <button>Create</button>
+      </form>
+    </section>
+
   </main>
 
-  <script src="app.js"></script>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="app.js" type="module"></script>
 </body>
 </html>

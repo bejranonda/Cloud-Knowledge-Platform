@@ -4,10 +4,13 @@ A self-hosted PKM + sync gateway that replaces paid Obsidian Sync with a 100% fr
 
 ## Capabilities
 
-- **Self-hosted sync backend** (CouchDB, recommended) that mirrors the Obsidian Sync UX for PC and mobile.
-- **Web-App dashboard** with connection monitor, note CRUD/browse, graph visualisation, and multi-project isolation.
-- **Git-backed time-series history** — every synced change is committed so admins can replay evolution by step or timestamp.
-- **Event-driven Hermes pipeline** — a file-system watcher fires Hermes on new Info and stores the produced Knowledge alongside.
+- **Two sync options**: Self-hosted LiveSync (CouchDB) for real-time E2E encrypted sync, **or** a built-in WebDAV endpoint for Obsidian Remotely Save — no CouchDB needed for the WebDAV path.
+- **Obsidian-like Web-App**: three-pane editor with live Markdown preview, wikilinks, backlinks, tag browser, full-text search (Ctrl+K), force-directed graph, file tree with CRUD, dark theme.
+- **Obsidian bridge**: reads `<vault>/.obsidian/` (workspace, starred, plugins, graph) and exposes it via API so the dashboard reflects what Obsidian sees.
+- **Git-backed time-series history**: per-project repo, debounced commits, per-file history, unified diff view, one-click restore.
+- **Event-driven Hermes pipeline**: watcher fires a worker queue with exponential-backoff retries; re-trigger from the UI.
+- **Admin auth** (bearer token) and **live updates** over SSE.
+- **Multi-project isolation**: separate CouchDB DB, vault dir, Git repo, Hermes workdir per project.
 
 ## Repo layout
 
