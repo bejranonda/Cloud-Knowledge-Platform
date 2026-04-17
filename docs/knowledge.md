@@ -50,6 +50,19 @@ vaults/<project>/
 - Both paths terminate in the same vault dir and go through the same watcher → search + versioning + SSE pipeline.
 - Choose LiveSync for real-time + E2E + mobile tolerance; WebDAV for simplicity or when a client can't run LiveSync.
 
+## Per-project credentials
+
+- `CKP_ADMIN_TOKEN` (env) is the bootstrap token. It can do anything.
+- Admins issue **per-project tokens** via `POST /api/projects/{slug}/credentials`. Each token grants write access to one project (API + WebDAV). Tokens are persisted in `vaults/.credentials.json`.
+- WebDAV clients use HTTP Basic with the project token as the password (username is ignored).
+- Revoke via `DELETE /api/projects/{slug}/credentials?prefix=<first-6>`.
+
+## Attachments
+
+- Binary uploads go to `<vault>/attachments/`. Max 50 MB (`MAX_UPLOAD_BYTES` in `routes/attachments_routes.py`).
+- Upload: `POST /api/projects/{slug}/attachments` (multipart `file`). Serve: `GET /api/projects/{slug}/attachments/{name}`.
+- The frontend preview resolves `![[file.png]]` and markdown image paths against this endpoint.
+
 ## Multi-project isolation boundaries
 
 | Layer | Mechanism |

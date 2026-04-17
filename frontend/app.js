@@ -188,6 +188,30 @@ $("#new-note-btn").addEventListener("click", () => {
   $("#note-editor").focus();
 });
 
+$("#upload-btn").addEventListener("click", () => $("#upload-input").click());
+$("#upload-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append("file", file);
+  const t = token.get();
+  const r = await fetch(`/api/projects/${state.project}/attachments`, {
+    method: "POST",
+    headers: t ? { authorization: `Bearer ${t}` } : {},
+    body: fd,
+  });
+  if (!r.ok) return toast(`upload failed: ${r.status}`, "bad");
+  const { path } = await r.json();
+  const name = path.replace(/^attachments\//, "");
+  const snippet = `![[${name}]]\n`;
+  const ed = $("#note-editor");
+  const pos = ed.selectionStart;
+  ed.value = ed.value.slice(0, pos) + snippet + ed.value.slice(pos);
+  ed.dispatchEvent(new Event("input"));
+  toast("Uploaded");
+  e.target.value = "";
+});
+
 $("#preview-toggle").addEventListener("change", (e) => {
   $(".editor-split").classList.toggle("no-preview", !e.target.checked);
 });
@@ -225,6 +249,18 @@ function renderMarkdown(src) {
     return `\n<ol>${items}</ol>`;
   });
 
+  // image embed: ![[file.png]]
+  text = text.replace(/!\[\[([^\]]+)\]\]/g, (_, name) => {
+    const src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(name.replace(/^attachments\//, ""))}`;
+    return `<img src="${src}" alt="${esc(name)}" style="max-width:100%"/>`;
+  });
+  // markdown image: ![alt](path)
+  text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
+    if (!/^https?:/.test(src)) {
+      src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(src.replace(/^attachments\//, ""))}`;
+    }
+    return `<img src="${src}" alt="${esc(alt)}" style="max-width:100%"/>`;
+  });
   // inline: wikilinks, links, bold/italic, code, tags
   const knownPaths = new Set(state.tree.map((f) => f.path.replace(/\.md$/, "")));
   text = text.replace(/\[\[([^\]|#]+)(?:[|#]([^\]]+))?\]\]/g, (_, tgt, label) => {

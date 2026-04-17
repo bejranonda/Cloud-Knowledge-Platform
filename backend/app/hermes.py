@@ -12,8 +12,7 @@ import queue
 import subprocess
 import threading
 import time
-from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from . import events
@@ -38,40 +37,57 @@ class HermesJob:
     status: str = "queued"     # queued | running | ok | failed
 
 
-_jobs: deque[HermesJob] = deque(maxlen=500)
+_MAX_JOBS = 500
+_jobs: dict[str, HermesJob] = {}       # keyed by id
+_job_order: list[str] = []             # insertion order
 _jobs_lock = threading.Lock()
-_queue: "queue.Queue[tuple[str, Path, Path]]" = queue.Queue()
+_queue: "queue.Queue[tuple[str, str, Path, Path]]" = queue.Queue()
 _started = False
 _start_lock = threading.Lock()
 
 
+def _job_id(slug: str, src: Path, started_ts: float) -> str:
+    return f"{slug}:{src.name}:{started_ts:.3f}"
+
+
 def recent_jobs(limit: int = 50) -> list[HermesJob]:
+    """Return an ordered snapshot (newest first) of the last *limit* jobs."""
     with _jobs_lock:
-        return list(_jobs)[-limit:][::-1]
+        ids = _job_order[-limit:][::-1]
+        return [HermesJob(**asdict(_jobs[i])) for i in ids if i in _jobs]
 
 
-def _record(job: HermesJob) -> None:
+def _record(job_id: str, job: HermesJob) -> None:
     with _jobs_lock:
-        _jobs.append(job)
+        if job_id not in _jobs:
+            _job_order.append(job_id)
+            if len(_job_order) > _MAX_JOBS:
+                oldest = _job_order.pop(0)
+                _jobs.pop(oldest, None)
+        _jobs[job_id] = HermesJob(**asdict(job))  # snapshot
     events.emit("hermes", {
+        "id": job_id,
         "project": job.project,
         "source": job.source,
         "status": job.status,
         "ok": job.ok,
-        "produced": job.produced,
+        "produced": list(job.produced),
         "attempts": job.attempts,
     })
 
 
 def enqueue(project_slug: str, vault_dir: Path, source_file: Path) -> None:
     _ensure_workers()
-    _queue.put((project_slug, vault_dir, source_file))
+    started = time.time()
+    jid = _job_id(project_slug, source_file, started)
     job = HermesJob(
         project=project_slug,
         source=str(source_file.relative_to(vault_dir)) if source_file.is_relative_to(vault_dir) else source_file.name,
+        started_ts=started,
         status="queued",
     )
-    _record(job)
+    _record(jid, job)
+    _queue.put((jid, project_slug, vault_dir, source_file))
 
 
 def _ensure_workers() -> None:
@@ -86,23 +102,25 @@ def _ensure_workers() -> None:
 
 def _worker() -> None:
     while True:
-        slug, vault_dir, src = _queue.get()
+        jid, slug, vault_dir, src = _queue.get()
         try:
-            _run(slug, vault_dir, src)
+            _run(jid, slug, vault_dir, src)
         except Exception:
             log.exception("hermes worker error")
         finally:
             _queue.task_done()
 
 
-def _run(slug: str, vault_dir: Path, src: Path) -> None:
-    job = HermesJob(
+def _run(jid: str, slug: str, vault_dir: Path, src: Path) -> None:
+    with _jobs_lock:
+        existing = _jobs.get(jid)
+    job = HermesJob(**asdict(existing)) if existing else HermesJob(
         project=slug,
         source=str(src.relative_to(vault_dir)) if src.is_relative_to(vault_dir) else src.name,
         started_ts=time.time(),
-        status="running",
     )
-    _record(job)
+    job.status = "running"
+    _record(jid, job)
 
     knowledge_dir = vault_dir / "knowledge"
     knowledge_dir.mkdir(exist_ok=True)
@@ -113,7 +131,7 @@ def _run(slug: str, vault_dir: Path, src: Path) -> None:
             job.status = "failed"
             job.stderr = "source file disappeared"
             job.finished_ts = time.time()
-            _record(job)
+            _record(jid, job)
             return
 
         before = {p.name for p in knowledge_dir.glob("*.md")}
@@ -142,11 +160,11 @@ def _run(slug: str, vault_dir: Path, src: Path) -> None:
             job.ok = True
             job.status = "ok"
             job.finished_ts = time.time()
-            _record(job)
+            _record(jid, job)
             return
         log.warning("hermes attempt %d/%d failed (rc=%s) for %s", attempt, MAX_RETRIES, rc, src)
         time.sleep(min(2 ** attempt, 10))
 
     job.status = "failed"
     job.finished_ts = time.time()
-    _record(job)
+    _record(jid, job)

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Cloud Knowledge Platform</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#11131a" />
 </head>
 <body>
   <header>
@@ -44,6 +47,8 @@
           <input id="note-path" placeholder="notes/new-note.md" spellcheck="false" />
           <button id="save-note">Save</button>
           <button id="delete-note" class="ghost">Delete</button>
+          <button id="upload-btn" class="ghost" title="Attach image/file">📎</button>
+          <input type="file" id="upload-input" hidden />
           <label class="toggle"><input type="checkbox" id="preview-toggle" checked /> Preview</label>
         </div>
         <div class="editor-split">

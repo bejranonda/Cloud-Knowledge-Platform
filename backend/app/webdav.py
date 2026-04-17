@@ -12,10 +12,7 @@ Mount point in main.py::
 """
 from __future__ import annotations
 
-import base64
 import hashlib
-import os
-import secrets
 import shutil
 import urllib.parse
 from email.utils import formatdate
@@ -38,40 +35,11 @@ router = APIRouter()
 _DAV_NS = "DAV:"
 
 
-def _check_auth(authorization: str | None) -> None:
-    """Accept Bearer token or Basic auth (password == admin token).
-
-    If auth is disabled (dev mode), allow everything.
-    """
-    if not auth.enabled():
-        return
-
-    if not authorization:
-        raise HTTPException(401, "authorization required")
-
-    scheme, _, cred = authorization.partition(" ")
-    scheme = scheme.lower()
-
-    if scheme == "bearer":
-        token = cred.strip()
-        _token = os.getenv("CKP_ADMIN_TOKEN", "").strip()
-        if not secrets.compare_digest(token, _token):
-            raise HTTPException(403, "bad bearer token")
-        return
-
-    if scheme == "basic":
-        try:
-            decoded = base64.b64decode(cred.strip()).decode()
-        except Exception:
-            raise HTTPException(401, "malformed basic credentials")
-        # user:password — we only care about the password
-        _token = os.getenv("CKP_ADMIN_TOKEN", "").strip()
-        password = decoded.split(":", 1)[1] if ":" in decoded else decoded
-        if not secrets.compare_digest(password, _token):
-            raise HTTPException(403, "bad basic password")
-        return
-
-    raise HTTPException(401, "unsupported auth scheme")
+def _check_auth(slug: str, authorization: str | None) -> None:
+    """Delegate to auth.require_for_project: accepts admin token OR a
+    per-project token matching `slug`. Auth is disabled if no admin token
+    and no project credentials exist."""
+    auth.require_for_project(slug, authorization)
 
 
 # ---------------------------------------------------------------------------
@@ -293,11 +261,9 @@ async def webdav_handler(
     path: str = "",
     authorization: str | None = Header(default=None),
 ) -> Any:
-    _check_auth(authorization)
-
     method = request.method.upper()
 
-    # OPTIONS doesn't need a valid project
+    # OPTIONS is the pre-auth probe; skip auth so clients can discover DAV level.
     if method == "OPTIONS":
         return Response(
             status_code=200,
@@ -307,6 +273,9 @@ async def webdav_handler(
                 "Content-Length": "0",
             },
         )
+
+    # Authenticate (per-project or admin)
+    _check_auth(slug, authorization)
 
     # Resolve project
     proj = projects.get(slug)
