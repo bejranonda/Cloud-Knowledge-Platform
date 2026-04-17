@@ -35,5 +35,25 @@ docker-compose.yml   CouchDB + backend
 Client setup: see [docs/client-setup.md](docs/client-setup.md).
 Architecture: see [docs/architecture.md](docs/architecture.md).
 
+## Client onboarding
+
+New users connecting Obsidian (desktop or mobile) to this platform should start with the
+step-by-step guide at [docs/setup-client.md](docs/setup-client.md).
+Technical users on macOS, Linux, or Windows can run the helper scripts in
+[scripts/client/](scripts/client/) to pre-fill plugin settings automatically.
+
+## Production deploy
+
+For a hardened production install (systemd service, Caddy TLS, CouchDB in
+Docker, idempotent deploy script) see **[docs/setup-server.md](docs/setup-server.md)**.
+
+## Quickstarts
+
+Role-specific guides for getting productive fast:
+
+- [docs/quickstart-user.md](docs/quickstart-user.md) — end user who wants to take notes in Obsidian and have them sync automatically.
+- [docs/quickstart-manager.md](docs/quickstart-manager.md) — team manager who creates projects, onboards teammates, and monitors Hermes output.
+- [docs/quickstart-admin.md](docs/quickstart-admin.md) — server admin who owns the Ubuntu box, Docker, Caddy, and backups.
+
 ## License
 Internal / self-hosted use.

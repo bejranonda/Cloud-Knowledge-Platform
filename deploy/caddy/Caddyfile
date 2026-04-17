@@ -1,0 +1,17 @@
+{$CKP_DOMAIN:example.com} {
+    encode zstd gzip
+
+    # Let WebDAV PROPFIND/MKCOL/MOVE/COPY/LOCK/UNLOCK pass through.
+    # Caddy passes all methods to the reverse proxy by default; just raise body size.
+    request_body {
+        max_size 100MB
+    }
+
+    # CouchDB replication for Obsidian Self-hosted LiveSync
+    handle_path /couchdb/* {
+        reverse_proxy 127.0.0.1:5984
+    }
+
+    # Backend (API + WebDAV + UI)
+    reverse_proxy 127.0.0.1:8787
+}
