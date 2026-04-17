@@ -15,7 +15,7 @@ Self-hosted replacement for Obsidian Sync + a Web-App admin layer + Git history 
 
 ## How to run locally
 ```
-./scripts/install.sh && ./scripts/start.sh
+./scripts/server.sh install && ./scripts/server.sh start
 ```
 Backend listens on `:8787`. CouchDB on `:5984`. Vaults are in `./vaults/`.
 

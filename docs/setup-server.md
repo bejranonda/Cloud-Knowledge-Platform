@@ -17,7 +17,7 @@ fresh Ubuntu server. Assumes a competent sysadmin; commands are copy-pasteable.
 | **Python** | 3.11 or newer (`python3 --version`) |
 | **Git** | 2.x (`git --version`) |
 
-The deploy script (`scripts/deploy-server.sh`) will install any missing packages
+The deploy script (`scripts/server.sh deploy`) will install any missing packages
 via `apt-get`, so you only need a working Ubuntu system with `sudo`.
 
 ---
@@ -107,7 +107,7 @@ sudo chmod 600 /opt/ckp/.env
 
 ```bash
 cd /opt/ckp
-sudo ./scripts/deploy-server.sh
+sudo ./scripts/server.sh deploy
 ```
 
 The script is **idempotent** — re-running it is safe. It performs these steps in order:
@@ -291,10 +291,10 @@ Add a weekly cron job to snapshot vaults (Git bundles) and CouchDB:
 ```bash
 sudo crontab -e
 # Add the following line:
-0 2 * * 0 /opt/ckp/scripts/backup.sh /var/backups/ckp >> /var/log/ckp-backup.log 2>&1
+0 2 * * 0 /opt/ckp/scripts/server.sh backup /var/backups/ckp >> /var/log/ckp-backup.log 2>&1
 ```
 
-The backup script (`scripts/backup.sh`) creates a timestamped `.tgz` archive
+The backup script (`scripts/server.sh backup`) creates a timestamped `.tgz` archive
 containing:
 - One Git bundle per project (compact, restorable with `git clone`).
 - CouchDB JSON exports of all user databases.

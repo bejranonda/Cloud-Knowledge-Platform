@@ -27,10 +27,13 @@ docker-compose.yml   CouchDB + backend
 ## Quick start
 
 ```bash
-./scripts/install.sh           # installs Python deps + CouchDB via docker compose
-./scripts/start.sh             # boots CouchDB and the FastAPI backend
+./scripts/server.sh install    # Python deps + CouchDB via docker compose
+./scripts/server.sh start      # boot the FastAPI backend (foreground)
 # open http://<server>:8787/
 ```
+
+`scripts/server.sh` is the single entry point for all server-side lifecycle
+operations: `install`, `start`, `deploy`, `upgrade`, `status`, `backup`, `help`.
 
 Client setup: see [docs/client-setup.md](docs/client-setup.md).
 Architecture: see [docs/architecture.md](docs/architecture.md).
@@ -54,6 +57,11 @@ Role-specific guides for getting productive fast:
 - [docs/quickstart-user.md](docs/quickstart-user.md) — end user who wants to take notes in Obsidian and have them sync automatically.
 - [docs/quickstart-manager.md](docs/quickstart-manager.md) — team manager who creates projects, onboards teammates, and monitors Hermes output.
 - [docs/quickstart-admin.md](docs/quickstart-admin.md) — server admin who owns the Ubuntu box, Docker, Caddy, and backups.
+
+## Contributing
+
+Before making non-trivial changes read **[docs/approach.md](docs/approach.md)** —
+it's the decision playbook for this codebase.
 
 ## License
 Internal / self-hosted use.

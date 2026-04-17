@@ -28,7 +28,7 @@ four-step summary:
 ```bash
 git clone <repo> /opt/ckp && cd /opt/ckp
 cp .env.example .env && $EDITOR .env   # set CKP_ADMIN_TOKEN and CouchDB creds
-./scripts/deploy-server.sh             # installs deps, starts Docker + backend
+./scripts/server.sh deploy             # installs deps, starts Docker + backend
 # point DNS A record to this box; Caddy handles TLS automatically
 ```
 
@@ -52,13 +52,13 @@ journalctl -u ckp -f
 ### Backup
 
 ```bash
-./scripts/backup.sh /var/backups/ckp   # tarballs vaults/ + CouchDB data/
+./scripts/server.sh backup /var/backups/ckp   # tarballs vaults/ + CouchDB data/
 ```
 
 Schedule weekly via cron:
 
 ```cron
-0 2 * * 0  root /opt/ckp/scripts/backup.sh /var/backups/ckp
+0 2 * * 0  root /opt/ckp/scripts/server.sh backup /var/backups/ckp
 ```
 
 Copy the resulting archive off-box (S3, rsync to NAS, etc.) — local-only
@@ -189,7 +189,7 @@ git clone /path/to/backup/<slug>.bundle /tmp/<slug>-recovered
 rsync -a /tmp/<slug>-recovered/ /opt/ckp/vaults/<slug>/
 ```
 
-The backup script (`scripts/backup.sh`) creates `.bundle` files. Verify your
+The backup script (`scripts/server.sh backup`) creates `.bundle` files. Verify your
 backup schedule is running before you need this.
 
 ---

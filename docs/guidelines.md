@@ -12,9 +12,10 @@
 3. Issue credentials via dashboard; share passphrase out-of-band.
 
 ## Operating
-- Watch `journalctl -u ckp-backend` for watcher/Git errors.
+- Watch `journalctl -u ckp -f` for watcher/Git errors.
 - `vaults/<proj>/.git` is the source of truth for history — never `git reset --hard` without a backup branch.
-- CouchDB compaction weekly via cron (`scripts/compact.sh`).
+- Use `scripts/server.sh <subcmd>` for *every* lifecycle operation. Do not re-introduce per-concern scripts; add a new subcommand instead.
+- CouchDB compaction weekly via cron; see `scripts/server.sh backup` for the scheduled companion job.
 
 ## Change management
 - Every backend change must update `docs/architecture.md` if it alters component boundaries.

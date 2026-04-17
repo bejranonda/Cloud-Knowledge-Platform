@@ -50,6 +50,24 @@ vaults/<project>/
 - Both paths terminate in the same vault dir and go through the same watcher → search + versioning + SSE pipeline.
 - Choose LiveSync for real-time + E2E + mobile tolerance; WebDAV for simplicity or when a client can't run LiveSync.
 
+## Server lifecycle (one script)
+
+All server-side operations are behind `scripts/server.sh` with subcommands:
+
+| Subcommand | Purpose | Root? |
+|---|---|---|
+| `install` | Dev venv + deps + `docker compose up couchdb` | no |
+| `start`   | Foreground uvicorn (dev) | no |
+| `deploy`  | Production provision: apt deps, `ckp` system user, venv, systemd unit, Caddy, CouchDB | yes |
+| `upgrade` | `git pull` + `pip install` + `systemctl restart ckp` | yes |
+| `status`  | Health probes (backend, caddy, couchdb) + masked admin-token prefix | no |
+| `backup <dir>` | Per-project git bundles + CouchDB `_all_docs` dumps + registry/credentials, tarred | no |
+| `help`    | Print usage | no |
+
+Previous scripts (`install.sh`, `start.sh`, `deploy-server.sh`, `backup.sh`)
+were consolidated into this single dispatcher so operators only ever learn
+one command surface.
+
 ## Per-project credentials
 
 - `CKP_ADMIN_TOKEN` (env) is the bootstrap token. It can do anything.
