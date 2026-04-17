@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cloud Knowledge Platform</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Cloud Knowledge Platform</h1>
+    <nav>
+      <button data-tab="projects" class="active">Projects</button>
+      <button data-tab="sync">Sync</button>
+      <button data-tab="notes">Notes</button>
+      <button data-tab="graph">Graph</button>
+      <button data-tab="history">History</button>
+      <button data-tab="hermes">Hermes</button>
+    </nav>
+    <div class="project-picker">
+      <label>Project:
+        <select id="project-select"></select>
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <section id="projects" class="tab active">
+      <h2>Projects</h2>
+      <table id="projects-table"><thead><tr><th>Slug</th><th>Name</th></tr></thead><tbody></tbody></table>
+      <form id="new-project-form">
+        <input name="slug" placeholder="slug-like-this" required pattern="[a-z0-9][a-z0-9-]{1,48}" />
+        <input name="display_name" placeholder="Display name" required />
+        <button>Create project</button>
+      </form>
+    </section>
+
+    <section id="sync" class="tab">
+      <h2>Connection monitor</h2>
+      <table id="sync-table">
+        <thead><tr><th>Project</th><th>Device</th><th>Last doc</th><th>Last seen</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="notes" class="tab">
+      <h2>Notes</h2>
+      <div class="split">
+        <ul id="notes-list"></ul>
+        <div class="editor">
+          <input id="note-path" placeholder="notes/new-note.md" />
+          <textarea id="note-editor" rows="24"></textarea>
+          <button id="save-note">Save</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="graph" class="tab">
+      <h2>Graph</h2>
+      <canvas id="graph-canvas" width="960" height="560"></canvas>
+    </section>
+
+    <section id="history" class="tab">
+      <h2>History</h2>
+      <table id="history-table">
+        <thead><tr><th>When</th><th>Author</th><th>Message</th><th>Hash</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="hermes" class="tab">
+      <h2>Hermes jobs</h2>
+      <table id="hermes-table">
+        <thead><tr><th>Started</th><th>Project</th><th>Source</th><th>OK</th><th>Produced</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
