@@ -55,5 +55,6 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
 
 ## Continuous validation
 - After any non-trivial change run `./.venv/bin/pytest backend/tests -q` until green twice in a row.
+- The full suite now includes frontend smoke tests (`test_frontend.py`) that verify the static bundle is served and `app.js` passes `node --check`. Keep them lightweight — deeper UI tests wait until the UI stabilises.
 - `grep -r "Info → Knowledge" docs/ || true` should be empty — the canonical phrasing is the full DIKW-T chain.
 - `grep -rn "inbox/\|notes/\|knowledge/\|wisdom/" docs/ business/ reference/` sanity-checks that docs describe all four stages, not a subset.

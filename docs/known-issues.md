@@ -14,11 +14,11 @@
 | 10 | Git commits never fired from API writes — watcher feedback loop kept bumping debounce timestamp | Resolved | Watcher now filters to `_MUTATING` events only (created/modified/deleted/moved) | v0.3.1 |
 | 11 | WebDAV LOCK returned 500 — `secrets` module not imported in `webdav.py` | Resolved | Import added | v0.3.1 |
 | 12 | Two concurrent `POST /api/projects` could race and corrupt the registry | Resolved | Projects create() wrapped in `threading.Lock` | v0.3.1 |
-| 13 | Search index is in-memory only — lost on backend restart | Open | Restart triggers a full re-index scan; no persistence yet | — |
+| 13 | Search index is in-memory only — lost on backend restart | Resolved | Now persisted as SQLite FTS5 at `<vault>/.ckp/search.db`; survives restart; bm25-ranked | v0.5 |
 | 14 | Log rotation not configured — `journalctl` storage grows unbounded | Open | Configure `SystemMaxUse` in `/etc/systemd/journald.conf` or add `logrotate` rule | — |
 | 15 | CSRF protection not wired — state-changing API calls rely on Bearer token only | Open | Acceptable for Bearer-token APIs behind TLS; add CSRF middleware if browser cookies are ever used | — |
 | 16 | Pre-DIKW vaults (created before v0.4) lack a `wisdom/` folder | Advisory | `mkdir -p vaults/<slug>/wisdom`; new projects get it automatically | v0.4 |
-| 17 | `wisdom/` remains empty until a wisdom-capable Hermes build is wired up | Roadmap | Classifier + folder are ready; the synthesis pass is future work | — |
+| 17 | `wisdom/` remains empty until a wisdom-capable Hermes build is wired up | Stub landed (v0.5) | Deterministic Git-log-based stub; `POST /wisdom/synthesise` or the DIKW dashboard button. Swap for a real LLM pass later. | v0.5 |
 | 18 | Files outside the four stage folders are classified heuristically (frontmatter/wikilinks/hashtags) | By design | Normalise paths into a stage folder if strict classification is required | — |
 | 19 | Our `hermes-agent process …` contract is stub-only — the real Hermes CLI (Nous Research) has no `process` subcommand | Advisory | Use the passthrough stub in `docs/hermes-contract.md`, or a wrapper script; see `reference/hermes/integration_notes.md` for the three migration paths | — |
 

@@ -20,6 +20,7 @@ from .routes import (
     obsidian_routes,
     projects_routes,
     search_routes,
+    stages_routes,
     sync_routes,
 )
 
@@ -63,6 +64,7 @@ for r in (
     attachments_routes.router,
     credentials_routes.router,
     dikw_routes.router,
+    stages_routes.router,
 ):
     app.include_router(r)
 

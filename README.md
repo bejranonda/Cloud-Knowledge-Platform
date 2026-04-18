@@ -83,6 +83,9 @@ blueprints for the two external systems that most influenced this project:
 - [`reference/hermes/`](reference/hermes/) — Hermes Agent (Nous Research):
   self-improving loop, skill store, gateway, subagents, and how our stub
   contract differs from the real CLI.
+- [`reference/livesync/`](reference/livesync/) — Self-hosted LiveSync:
+  CouchDB doc model, chunking, E2E encryption flow, conflict resolution,
+  and the cleartext-materialisation tradeoff we accept.
 
 Each `platform_blueprint.md` is complete enough that an AI given only that
 file could stand up a working equivalent. See

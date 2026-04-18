@@ -165,3 +165,27 @@ Tour: `reference/README.md`.
 
 The classifier is pure, cheap, and re-runs on every `/dikw` summary request —
 no index to maintain.
+
+## Stage promotion + Wisdom synthesis
+
+- `POST /api/projects/{slug}/promote` — moves a Data file from `inbox/` into
+  `notes/` with minimal frontmatter (`title`, optional `tags`,
+  `promoted_from`, `stage: information`). Knowledge promotion is still
+  Hermes's job; we don't promote to `knowledge/` by hand.
+- `POST /api/projects/{slug}/wisdom/synthesise` — runs the deterministic
+  wisdom stub (`backend/app/wisdom.py`) over the project's `knowledge/`
+  folder and writes `wisdom/<stem>.md` for every knowledge file with ≥ 2
+  commits. Idempotent. The body of `_synthesise()` is a commit-chain
+  summary today; swap for a real LLM pass (Hermes wisdom mode) later.
+
+UI surfaces both: the editor toolbar shows a **Promote ↑** button on inbox
+files; the DIKW dashboard has a **Synthesise Wisdom ↻** button.
+
+## Search — persistent FTS5
+
+Per-project SQLite FTS5 at `<vault>/.ckp/search.db` (WAL mode,
+`unicode61` tokenizer with diacritic stripping). Survives restart. BM25
+scoring with title column weighted 5× over body. Reindex happens at startup
+(`watcher.start()` calls `search.reindex()` per project) and incrementally
+on every mutating watcher event. `.ckp/` is in the watcher ignore list so
+index writes never trigger commits or re-processing.

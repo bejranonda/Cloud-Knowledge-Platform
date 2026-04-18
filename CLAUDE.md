@@ -43,9 +43,12 @@ Running tests:
 - Don't add features speculatively. If requirements unclear, ask.
 
 ## Common tasks
-- **Add an endpoint**: edit `backend/app/main.py`; keep business logic in the relevant module.
+- **Add an endpoint**: add a route module under `backend/app/routes/` and register it in `backend/app/main.py`. Keep business logic in a sibling domain module.
 - **Change commit cadence**: `backend/app/versioning.py` (`DEBOUNCE_SECONDS`).
 - **Hermes invocation**: `backend/app/hermes.py` — the subprocess call is the one thing you tune per deployment.
+- **Wisdom synthesis**: `backend/app/wisdom.py` — stub today (Git-log summariser); swap `_synthesise()` body for a real LLM pass later.
+- **Search behaviour**: `backend/app/search.py` — SQLite FTS5 per project at `<vault>/.ckp/search.db`; bm25 with title column weighted 5×.
+- **Stage promotion endpoint**: `backend/app/routes/stages_routes.py` — `POST /promote` (inbox → notes) and `POST /wisdom/synthesise`.
 - **New project field**: update `backend/app/projects.py` model + the `/projects` view in `frontend/app.js`.
 
 ## Gotchas

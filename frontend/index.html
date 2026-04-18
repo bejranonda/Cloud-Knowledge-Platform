@@ -48,6 +48,7 @@
           <input id="note-path" placeholder="notes/new-note.md" spellcheck="false" />
           <button id="save-note">Save</button>
           <button id="delete-note" class="ghost">Delete</button>
+          <button id="promote-note" class="ghost" hidden title="Promote Data (inbox/) → Information (notes/)">Promote ↑</button>
           <button id="upload-btn" class="ghost" title="Attach image/file">📎</button>
           <input type="file" id="upload-input" hidden />
           <label class="toggle"><input type="checkbox" id="preview-toggle" checked /> Preview</label>
@@ -84,6 +85,10 @@ Use [[wikilinks]] and #tags."></textarea>
       </p>
       <div id="dikw-cards" class="dikw-cards"></div>
       <div id="dikw-time" class="dikw-time muted"></div>
+      <div class="dikw-actions">
+        <button id="wisdom-synth-btn" class="ghost" title="Synthesise wisdom/ notes from knowledge/ Git history">Synthesise Wisdom ↻</button>
+        <span id="wisdom-synth-result" class="muted"></span>
+      </div>
     </section>
 
     <section id="view-tags" class="view pad">

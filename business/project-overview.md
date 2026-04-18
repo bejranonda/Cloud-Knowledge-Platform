@@ -27,7 +27,7 @@ that informed the design.
 - Hermes promotes new Data/Information within 5 s of sync landing.
 - Hard multi-project isolation: an authenticated user for project A cannot read B.
 - `/api/projects/{slug}/dikw` returns accurate stage counts for any vault.
-- Core flows (auth, note CRUD + commit, search, backlinks, history, WebDAV, attachments, per-project token scope, Hermes retrigger, DIKW summary) validated by `pytest backend/tests`.
+- Core flows (auth, note CRUD + commit, persistent FTS5 search, backlinks, history, WebDAV, attachments, per-project token scope, Hermes retrigger, DIKW summary, stage promotion, wisdom synthesis, static bundle integrity) validated by `pytest backend/tests` — 17 tests as of v0.5.
 
 ## Out of scope (v1)
 - Public sharing / read-only publish.

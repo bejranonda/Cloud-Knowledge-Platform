@@ -211,3 +211,12 @@ form button { background: var(--accent); color: #0b0f18; border: 0; padding: 6px
 .dikw-meta  { font-size: 12px; color: var(--muted, #8b8fa3); }
 .dikw-hint  { font-size: 12px; margin-top: 6px; color: var(--muted, #8b8fa3); }
 .dikw-time  { margin-top: 8px; font-size: 13px; }
+
+.dikw-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.dikw-actions button { padding: 6px 12px; }

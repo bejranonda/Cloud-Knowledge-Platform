@@ -164,6 +164,7 @@ async function openNote(path) {
   loadFileHistory();
   renderNoteTags();
   $$("#tree .file").forEach((el) => el.classList.toggle("active", el.dataset.path === path));
+  $("#promote-note").hidden = !path.startsWith("inbox/");
 }
 
 $("#note-editor").addEventListener("input", (e) => {
@@ -187,6 +188,21 @@ $("#save-note").addEventListener("click", async () => {
   await loadTree();
   loadBacklinks();
   loadFileHistory();
+});
+
+$("#promote-note").addEventListener("click", async () => {
+  if (!state.currentPath || !state.currentPath.startsWith("inbox/")) return;
+  const tagsRaw = prompt("Tags for the promoted note (comma-separated, optional):", "");
+  if (tagsRaw === null) return;  // user cancelled
+  const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+  const body = { path: state.currentPath };
+  if (tags.length) body.tags = tags;
+  const res = await api(`/projects/${state.project}/promote`, {
+    method: "POST", body: JSON.stringify(body),
+  });
+  toast(`Promoted → ${res.to}`);
+  await loadTree();
+  await openNote(res.to);
 });
 
 $("#delete-note").addEventListener("click", async () => {
@@ -603,6 +619,27 @@ function startSSE() {
     if (!_sseRetry) _sseRetry = setTimeout(startSSE, 3000);
   };
 }
+
+// ---------- wisdom synthesis button ----------
+$("#wisdom-synth-btn")?.addEventListener("click", async () => {
+  if (!state.project) return;
+  const btn = $("#wisdom-synth-btn");
+  btn.disabled = true;
+  $("#wisdom-synth-result").textContent = "Synthesising…";
+  try {
+    const res = await api(`/projects/${state.project}/wisdom/synthesise`, { method: "POST" });
+    const produced = res.produced?.length || 0;
+    const skipped = res.skipped?.length || 0;
+    $("#wisdom-synth-result").textContent =
+      `Produced ${produced} wisdom note(s); skipped ${skipped} (need ≥ 2 commits).`;
+    await loadDikw();
+    await loadTree();
+  } catch (_) {
+    $("#wisdom-synth-result").textContent = "Failed — check auth token.";
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 // ---------- DIKW-T dashboard ----------
 async function loadDikw() {

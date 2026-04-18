@@ -431,3 +431,90 @@ def test_tree_reports_dikw_stage(client):
     assert by_path["notes/structured.md"]["stage"] == "information"
     assert by_path["knowledge/evergreen.md"]["stage"] == "knowledge"
     assert by_path["wisdom/why.md"]["stage"] == "wisdom"
+
+
+# ---------------------------------------------------------------------------
+# 13. Promote: Data (inbox/) → Information (notes/)
+# ---------------------------------------------------------------------------
+
+def test_promote_inbox_to_notes(client):
+    # Seed a raw Data file
+    r = client.put(
+        "/api/projects/proj-a/note",
+        json={"path": "inbox/promote-me.md", "content": "raw capture body"},
+        headers=H,
+    )
+    assert r.status_code == 200
+
+    # Promote with explicit tags
+    r = client.post(
+        "/api/projects/proj-a/promote",
+        json={"path": "inbox/promote-me.md", "tags": ["alpha", "beta"]},
+        headers=H,
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["from"] == "inbox/promote-me.md"
+    assert body["to"] == "notes/promote-me.md"
+
+    # Source is gone
+    r = client.get("/api/projects/proj-a/note", params={"path": "inbox/promote-me.md"})
+    assert r.status_code == 404
+
+    # Destination has frontmatter + original body
+    r = client.get("/api/projects/proj-a/note", params={"path": "notes/promote-me.md"})
+    assert r.status_code == 200
+    text = r.text
+    assert text.startswith("---\n")
+    assert "stage: information" in text
+    assert "promoted_from: inbox/promote-me.md" in text
+    assert "raw capture body" in text
+
+    # DIKW summary reflects the move
+    r = client.get("/api/projects/proj-a/dikw")
+    counts = r.json()["counts"]
+    assert counts["information"] >= 1  # promoted file counted here
+
+
+# ---------------------------------------------------------------------------
+# 14. Wisdom synthesis over knowledge/ history
+# ---------------------------------------------------------------------------
+
+def test_wisdom_synthesise(client):
+    # Create the same knowledge file twice to give it a 2-commit history.
+    path = "knowledge/evolving.md"
+    r = client.put(
+        "/api/projects/proj-a/note",
+        json={"path": path, "content": "# v1"},
+        headers=H,
+    )
+    assert r.status_code == 200
+    wait_until(
+        lambda: any(
+            "evolving.md" in c["msg"]
+            for c in client.get("/api/projects/proj-a/history").json()
+        ),
+        msg="v1 commit of evolving.md never landed",
+    )
+    r = client.put(
+        "/api/projects/proj-a/note",
+        json={"path": path, "content": "# v2\n\nnow it's bigger"},
+        headers=H,
+    )
+    assert r.status_code == 200
+
+    def _two_commits():
+        r = client.get("/api/projects/proj-a/history/file", params={"path": path})
+        return r.status_code == 200 and len(r.json()) >= 2
+
+    wait_until(_two_commits, msg="expected 2 commits for evolving.md")
+
+    r = client.post("/api/projects/proj-a/wisdom/synthesise", headers=H)
+    assert r.status_code == 200
+    body = r.json()
+    assert "wisdom/evolving.md" in body["produced"]
+
+    r = client.get("/api/projects/proj-a/note", params={"path": "wisdom/evolving.md"})
+    assert r.status_code == 200
+    assert r.text.startswith("# Wisdom: evolving")
+    assert "Evolution" in r.text

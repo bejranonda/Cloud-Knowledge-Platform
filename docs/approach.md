@@ -84,6 +84,12 @@ Before inventing a new subsystem, check whether it has already been solved in
   `reference/hermes/integration_notes.md` before changing the Hermes
   subprocess contract — the upstream CLI has no `process` subcommand,
   which constrains what `CKP_HERMES_BIN` can actually point at.
+- **Self-hosted LiveSync** (`reference/livesync/platform_blueprint.md`) —
+  the sync transport we bet on. Read §7 (CouchDB Server Setup) before
+  touching CouchDB config; read `reference/livesync/integration_notes.md`
+  before changing `backend/app/sync_monitor.py` — it documents the
+  cleartext-materialisation tradeoff (we turn off E2E on the server side
+  on purpose, so Hermes can read the files).
 
 Rule of thumb: **if you find yourself designing something that feels
 familiar, grep `reference/` before writing code.** If a blueprint covers the
