@@ -381,3 +381,53 @@ def test_hermes_retrigger(client):
     )
     assert r.status_code == 200
     assert r.json().get("ok") is True
+
+
+# ---------------------------------------------------------------------------
+# 11. DIKW-T stage summary
+# ---------------------------------------------------------------------------
+
+def test_dikw_summary(client):
+    # Seed one note of each kind
+    writes = [
+        ("inbox/raw.md", "just a dump"),                              # Data
+        ("notes/structured.md", "---\ntags: [x]\n---\n# Info"),       # Information
+        ("knowledge/evergreen.md", "# Evergreen"),                    # Knowledge
+        ("wisdom/why.md", "# Why it changed"),                        # Wisdom
+    ]
+    for path, content in writes:
+        r = client.put(
+            "/api/projects/proj-a/note",
+            json={"path": path, "content": content},
+            headers=H,
+        )
+        assert r.status_code == 200, f"put {path} failed: {r.text}"
+
+    r = client.get("/api/projects/proj-a/dikw")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["project"] == "proj-a"
+    counts = body["counts"]
+    assert counts["data"] >= 1
+    assert counts["information"] >= 1
+    assert counts["knowledge"] >= 1
+    assert counts["wisdom"] >= 1
+    assert body["total"] >= 4
+    assert body["commits"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# 12. Tree includes DIKW-T stage per markdown file
+# ---------------------------------------------------------------------------
+
+def test_tree_reports_dikw_stage(client):
+    r = client.get("/api/projects/proj-a/tree")
+    assert r.status_code == 200
+    tree = r.json()
+    by_path = {f["path"]: f for f in tree}
+
+    # At least one file in each stage from the seed above
+    assert by_path["inbox/raw.md"]["stage"] == "data"
+    assert by_path["notes/structured.md"]["stage"] == "information"
+    assert by_path["knowledge/evergreen.md"]["stage"] == "knowledge"
+    assert by_path["wisdom/why.md"]["stage"] == "wisdom"

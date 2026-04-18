@@ -38,6 +38,10 @@ class Project:
     def notes_dir(self) -> Path:
         return self.vault_dir / "notes"
 
+    @property
+    def wisdom_dir(self) -> Path:
+        return self.vault_dir / "wisdom"
+
 
 def _load() -> dict[str, Project]:
     if not _REGISTRY.exists():
@@ -72,7 +76,13 @@ def create(slug: str, display_name: str) -> Project:
             raise ValueError(f"project exists: {slug}")
 
         proj = Project(slug=slug, display_name=display_name)
-        for d in (proj.vault_dir, proj.inbox_dir, proj.knowledge_dir, proj.notes_dir):
+        for d in (
+            proj.vault_dir,
+            proj.inbox_dir,
+            proj.knowledge_dir,
+            proj.notes_dir,
+            proj.wisdom_dir,
+        ):
             d.mkdir(parents=True, exist_ok=True)
 
         # init git repo if missing
@@ -91,7 +101,11 @@ def create(slug: str, display_name: str) -> Project:
                 check=True,
             )
             readme = proj.vault_dir / "README.md"
-            readme.write_text(f"# {display_name}\n\nInbox → Knowledge (managed by Hermes).\n")
+            readme.write_text(
+                f"# {display_name}\n\n"
+                "DIKW-T pyramid: inbox/ (Data) → notes/ (Information) → "
+                "knowledge/ (Knowledge, Hermes) → wisdom/ (Wisdom + Time).\n"
+            )
             subprocess.run(["git", "add", "-A"], cwd=proj.vault_dir, check=True)
             subprocess.run(
                 ["git", "commit", "-q", "-m", f"init: {slug}"],

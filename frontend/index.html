@@ -19,6 +19,7 @@
     <button id="token-btn" title="Set admin token" aria-label="Set admin token">🔑</button>
     <nav class="views">
       <button data-view="editor" class="active">Editor</button>
+      <button data-view="dikw">DIKW</button>
       <button data-view="graph">Graph</button>
       <button data-view="tags">Tags</button>
       <button data-view="sync">Sync</button>
@@ -71,6 +72,18 @@ Use [[wikilinks]] and #tags."></textarea>
 
     <section id="view-graph" class="view">
       <canvas id="graph-canvas"></canvas>
+    </section>
+
+    <section id="view-dikw" class="view pad">
+      <h2>DIKW-T · stage breakdown</h2>
+      <p class="muted">
+        Every <code>.md</code> file is classified into one of four stages:
+        Data (<code>inbox/</code>), Information (<code>notes/</code>),
+        Knowledge (<code>knowledge/</code>), Wisdom (<code>wisdom/</code>).
+        Git commits provide the Time axis.
+      </p>
+      <div id="dikw-cards" class="dikw-cards"></div>
+      <div id="dikw-time" class="dikw-time muted"></div>
     </section>
 
     <section id="view-tags" class="view pad">

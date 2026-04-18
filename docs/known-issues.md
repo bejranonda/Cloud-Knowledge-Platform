@@ -17,5 +17,8 @@
 | 13 | Search index is in-memory only — lost on backend restart | Open | Restart triggers a full re-index scan; no persistence yet | — |
 | 14 | Log rotation not configured — `journalctl` storage grows unbounded | Open | Configure `SystemMaxUse` in `/etc/systemd/journald.conf` or add `logrotate` rule | — |
 | 15 | CSRF protection not wired — state-changing API calls rely on Bearer token only | Open | Acceptable for Bearer-token APIs behind TLS; add CSRF middleware if browser cookies are ever used | — |
+| 16 | Pre-DIKW vaults (created before v0.4) lack a `wisdom/` folder | Advisory | `mkdir -p vaults/<slug>/wisdom`; new projects get it automatically | v0.4 |
+| 17 | `wisdom/` remains empty until a wisdom-capable Hermes build is wired up | Roadmap | Classifier + folder are ready; the synthesis pass is future work | — |
+| 18 | Files outside the four stage folders are classified heuristically (frontmatter/wikilinks/hashtags) | By design | Normalise paths into a stage folder if strict classification is required | — |
 
 File new issues in `docs/known-issues.md` with a date and reproduction path.

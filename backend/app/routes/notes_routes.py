@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from .. import auth, events, search, versioning
+from .. import auth, dikw, events, search, versioning
 from ..util import proj_or_404, safe_path
 
 router = APIRouter(prefix="/api/projects", tags=["notes"])
@@ -35,11 +35,13 @@ def tree(slug: str) -> list[dict]:
         if any(part.startswith(".") for part in rel.parts):
             continue
         st = p.stat()
+        stage = dikw.classify(rel) if p.suffix == ".md" else None
         out.append({
             "path": rel.as_posix(),
             "size": st.st_size,
             "mtime": int(st.st_mtime),
             "kind": "md" if p.suffix == ".md" else "file",
+            "stage": stage,
         })
     return out
 

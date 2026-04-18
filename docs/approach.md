@@ -4,6 +4,7 @@ Why this codebase looks the way it does, and the rules we follow when changing i
 
 ## Guiding principles
 
+0. **DIKW-T is the mental model.** Every file lives in exactly one stage — Data (`inbox/`), Information (`notes/`), Knowledge (`knowledge/`), Wisdom (`wisdom/`) — and every change is preserved as a Git commit so the **Time** axis is always queryable. When adding a feature, the first question is *which stage does this affect?* See `docs/dikw-t.md`.
 1. **One vault = one source of truth.** The on-disk Markdown tree is canonical. CouchDB, the search index, the graph, and the Git repo all derive from it. When two derived views disagree, trust the files.
 2. **Every change is a commit.** Users never see the Git repo directly, but every write path — LiveSync, WebDAV, API, Web-App, restore, Hermes — funnels through `versioning.schedule_commit`. Debounced 2 s; never silent.
 3. **Per-project isolation is physical, not logical.** A CouchDB DB, a vault dir, a Git repo, a Hermes workdir. No shared tables, no "tenant_id" columns. Cheaper to reason about than to enforce.
@@ -13,7 +14,7 @@ Why this codebase looks the way it does, and the rules we follow when changing i
 
 ## Method: how we add a feature
 
-1. **Read the user's request twice.** Is this a new verb, or a new shape on an existing verb? (New endpoints are cheap; new domain modules are not.)
+1. **Read the user's request twice.** Is this a new verb, or a new shape on an existing verb? (New endpoints are cheap; new domain modules are not.) Which DIKW-T stage is affected — Data, Information, Knowledge, or Wisdom? The answer usually tells you where the code and the side effect belong.
 2. **Decide where the side effect lives.** There are only a handful of canonical side-effect sinks: the vault filesystem, the search index, the Git queue, the SSE bus, the Hermes queue, the CouchDB feed. A new feature either triggers these or it doesn't — it almost never needs a new sink.
 3. **Write the domain module first** (`backend/app/<thing>.py`). Keep it pure-ish: no FastAPI imports, no route decorators, just functions and types.
 4. **Wire a route thinly** in `backend/app/routes/<thing>_routes.py`. Auth dependency at the top; one-liner per handler; return JSON. Anything beyond a handful of lines belongs in the domain module.
@@ -41,6 +42,10 @@ The orchestrator always **reads the result critically**, wires it up, and keeps 
 2. **Split when there's a second consumer**, not a second reason. Three similar lines is better than a premature abstraction.
 3. **Move code into a new file only after the feature it enables is on disk.** No "scaffolding" commits.
 4. **Delete ruthlessly.** Unused = gone. Don't keep fallbacks, feature flags, or compatibility shims for users who don't exist.
+
+## Method: continuous validation
+
+After any non-trivial change we run a **zero-error loop**: `pytest backend/tests -q` → fix any failure → repeat until green twice in a row. Docs get grepped for stale language (`grep -r "Info →" docs/` etc.) so the DIKW-T vocabulary stays consistent. The loop terminates only when tests pass, lints are clean, and no doc still references retired terminology.
 
 ## Recent lessons
 

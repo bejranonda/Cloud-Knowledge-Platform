@@ -1,6 +1,11 @@
 # Hermes Agent Contract
 
-The backend invokes Hermes once per new Info file. The call is:
+Hermes is the DIKW-T **stage-promotion engine**: it consumes Data (`inbox/`)
+and Information (`notes/`) and produces Knowledge (`knowledge/`). A future
+wisdom-mode pass will read `knowledge/` + Git history and emit Wisdom
+(`wisdom/`). See `docs/dikw-t.md`.
+
+The backend invokes Hermes once per new source file. The call is:
 
 ```
 <CKP_HERMES_BIN> process \

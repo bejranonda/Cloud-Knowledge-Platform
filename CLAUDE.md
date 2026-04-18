@@ -5,6 +5,15 @@ This file is the fast on-ramp for an AI agent (Claude / others) picking up work 
 ## What this project is
 Self-hosted replacement for Obsidian Sync + a Web-App admin layer + Git history + a Hermes Agent pipeline. See `README.md` and `docs/architecture.md`.
 
+## The mental model: DIKW-T
+The system is a **DIKW-T pyramid** (Data → Information → Knowledge → Wisdom + Time). One folder per stage in every vault:
+- `inbox/` = **Data** (raw capture)
+- `notes/` = **Information** (tagged, linked, with frontmatter)
+- `knowledge/` = **Knowledge** (Hermes-synthesised evergreen notes)
+- `wisdom/` = **Wisdom + Time** (agent-authored "why it changed" notes citing Git history)
+
+Time-series isn't a folder — every stage is versioned in the per-project Git repo. Classifier + `/api/projects/{slug}/dikw` summary live in `backend/app/dikw.py`. Authoritative spec: `docs/dikw-t.md`. Keep this model in mind when adding features; new content usually belongs in one of these four folders.
+
 ## Where things live
 - `backend/app/` — FastAPI service. Entry: `backend/app/main.py`.
 - `frontend/` — static dashboard, no build step. Served by FastAPI.

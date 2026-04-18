@@ -174,3 +174,40 @@ form button { background: var(--accent); color: #0b0f18; border: 0; padding: 6px
   #tag-browser { grid-template-columns: 1fr; }
   .pane-head { flex-wrap: wrap; }
 }
+
+/* ---------- DIKW-T ---------- */
+.stage {
+  display: inline-block;
+  width: 14px; height: 14px; line-height: 14px;
+  font-size: 9px; font-weight: 700;
+  text-align: center; border-radius: 3px;
+  margin-left: 6px; color: #0b0c10;
+  vertical-align: baseline;
+}
+.stage-data        { background: #7aa2f7; }  /* blue  — raw */
+.stage-information { background: #9ece6a; }  /* green — structured */
+.stage-knowledge   { background: #e0af68; }  /* amber — synthesised */
+.stage-wisdom      { background: #bb9af7; }  /* violet — time-series */
+
+.dikw-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.dikw-card {
+  background: var(--panel, #1a1c24);
+  border: 1px solid var(--line, #2a2d38);
+  border-left: 4px solid var(--line, #2a2d38);
+  border-radius: 6px;
+  padding: 14px 16px;
+}
+.dikw-card.stage-data        { border-left-color: #7aa2f7; }
+.dikw-card.stage-information { border-left-color: #9ece6a; }
+.dikw-card.stage-knowledge   { border-left-color: #e0af68; }
+.dikw-card.stage-wisdom      { border-left-color: #bb9af7; }
+.dikw-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted, #8b8fa3); }
+.dikw-count { font-size: 28px; font-weight: 700; margin: 4px 0; }
+.dikw-meta  { font-size: 12px; color: var(--muted, #8b8fa3); }
+.dikw-hint  { font-size: 12px; margin-top: 6px; color: var(--muted, #8b8fa3); }
+.dikw-time  { margin-top: 8px; font-size: 13px; }

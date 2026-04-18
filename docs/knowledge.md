@@ -2,15 +2,22 @@
 
 Running notes on *how this platform works internally* — derived from operating it, not from specs.
 
-## Vault layout per project
+## Vault layout per project — DIKW-T
+
+The folder layout is the [DIKW-T pyramid](dikw-t.md) in concrete form:
 
 ```
 vaults/<project>/
-├── inbox/          # Raw "Info" — Hermes watches this
-├── knowledge/      # Hermes output — structured "Knowledge"
-├── notes/          # User-authored notes
-└── .git/           # Managed by the versioner
+├── inbox/          # [Data]        Raw capture — Hermes watches this
+├── notes/          # [Information] Tagged + linked notes, human-authored
+├── knowledge/      # [Knowledge]   Hermes output (evergreen / synthesised)
+├── wisdom/         # [Wisdom + T]  Hermes wisdom mode: why things changed
+├── attachments/    # Binary uploads (images, PDFs, …)
+└── .git/           # The Time axis — managed by the versioner
 ```
+
+Runtime stage breakdown: `GET /api/projects/{slug}/dikw` returns counts per
+stage plus Git commit stats. Classifier lives in `backend/app/dikw.py`.
 
 ## Commit cadence
 
@@ -18,13 +25,18 @@ vaults/<project>/
 - Author: `sync-bot <sync@platform.local>` unless `X-Sync-Source` header arrives from a known client → then author = device name.
 - Message convention:
   - `sync: <device> @ <iso-ts>` for end-user changes.
-  - `hermes: <source-file> -> knowledge/<out>` for pipeline output.
+  - `hermes: <stage-in> -> <stage-out> (<source> -> <out>)` for pipeline output, e.g. `hermes: information -> knowledge (notes/foo.md -> knowledge/foo.md)`.
   - `manual: <user> via web-app` for Web-App edits.
 
-## Hermes contract
+## Hermes contract — stage promotion
 
-- Invocation: `hermes-agent process --input <path> --output-dir <vault>/knowledge --project <slug>` (adjust to your Hermes build).
-- Timeout: 120 s per Info file (override in project config).
+Hermes is the **stage-promotion engine**. The watcher feeds it any new file in
+`inbox/` or `notes/` (Data / Information) and it writes synthesised output to
+`knowledge/`. A future wisdom-mode pass reads the Git history of `knowledge/`
+and writes to `wisdom/`.
+
+- Invocation: `hermes-agent process --input <path> --output-dir <vault>/knowledge --project <slug>` (adjust to your Hermes build). See `docs/hermes-contract.md`.
+- Timeout: 120 s per source file (override in project config).
 - Failure: Hermes non-zero exit → job logged with stderr, no Knowledge file written, watcher continues.
 
 ## Graph generation
@@ -107,3 +119,17 @@ one command surface.
 | History | Separate Git repo |
 | API | `/api/projects/{slug}/…` prefix + permission check |
 | Hermes | Per-project working dir + env |
+
+## DIKW-T classifier
+
+`backend/app/dikw.py` classifies every `.md` in a vault into `data`,
+`information`, `knowledge`, or `wisdom`. Rules:
+
+1. Top-level folder wins: `inbox/` → Data, `notes/` → Information (with
+   heuristic fallback to Data if no structure), `knowledge/` → Knowledge,
+   `wisdom/` → Wisdom.
+2. "Structure" = YAML frontmatter, a `[[wikilink]]`, or a `#tag`. Anything
+   without structure outside the four stage folders is Data.
+
+The classifier is pure, cheap, and re-runs on every `/dikw` summary request —
+no index to maintain.

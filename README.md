@@ -2,6 +2,12 @@
 
 A self-hosted PKM + sync gateway that replaces paid Obsidian Sync with a 100% free stack on Ubuntu. It synchronises Obsidian vaults across devices, versions every change in Git, exposes a Web-App for admin/data management, and dispatches new "Info" notes to the **Hermes Agent** which converts them into structured "Knowledge".
 
+The pipeline is organised around the **DIKW-T** pyramid
+(**D**ata → **I**nformation → **K**nowledge → **W**isdom + **T**ime) —
+one folder per stage (`inbox/`, `notes/`, `knowledge/`, `wisdom/`), plus the
+per-project Git repo as the time-series backbone. See
+[docs/dikw-t.md](docs/dikw-t.md) for the authoritative model.
+
 ## Capabilities
 
 - **Two sync options**: Self-hosted LiveSync (CouchDB) for real-time E2E encrypted sync, **or** a built-in WebDAV endpoint for Obsidian Remotely Save — no CouchDB needed for the WebDAV path.

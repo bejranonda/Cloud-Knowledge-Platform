@@ -7,7 +7,7 @@ from pathlib import Path
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
-from . import events, hermes, projects, search, versioning
+from . import dikw, events, hermes, projects, search, versioning
 from .config import settings
 
 log = logging.getLogger(__name__)
@@ -45,12 +45,13 @@ class _Handler(FileSystemEventHandler):
         if str(abs_path).endswith(".md"):
             search.update_file(proj.vault_dir, abs_path)
 
-        versioning.schedule_commit(
-            proj.vault_dir, reason=f"sync: {rel.as_posix()} ({event.event_type})"
-        )
+        rel_in_vault = rel.relative_to(slug)
+        stage = dikw.classify(rel_in_vault) if str(abs_path).endswith(".md") else None
+        reason = f"sync: [{stage}] {rel.as_posix()} ({event.event_type})" if stage else f"sync: {rel.as_posix()} ({event.event_type})"
+        versioning.schedule_commit(proj.vault_dir, reason=reason)
         events.emit("fs", {
-            "project": slug, "path": rel.relative_to(slug).as_posix(),
-            "op": event.event_type,
+            "project": slug, "path": rel_in_vault.as_posix(),
+            "op": event.event_type, "stage": stage,
         })
 
         if (
