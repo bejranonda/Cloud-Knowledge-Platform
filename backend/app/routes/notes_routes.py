@@ -5,7 +5,7 @@ import shutil
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .. import auth, events, search, versioning
 from ..util import proj_or_404, safe_path
@@ -19,11 +19,9 @@ class NoteWrite(BaseModel):
 
 
 class NoteMove(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     from_: str = Field(alias="from")
     to: str
-
-    class Config:
-        populate_by_name = True
 
 
 @router.get("/{slug}/tree")

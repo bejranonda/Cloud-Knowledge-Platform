@@ -20,7 +20,26 @@ async function api(path, opts = {}) {
   const r = await fetch(`/api${path}`, { ...opts, headers });
   if (!r.ok) {
     const txt = await r.text();
-    toast(`${r.status} ${txt}`, "bad");
+    if (r.status === 401 || r.status === 403) {
+      toast(`Auth required — paste your admin token`, "bad");
+      // Prompt for token only once per event burst to avoid dialog spam.
+      if (!api._promptOpen) {
+        api._promptOpen = true;
+        try {
+          const v = prompt("Admin bearer token (stored in this browser only):", t);
+          if (v && v !== t) {
+            token.set(v);
+            toast("Token saved — retrying…");
+            api._promptOpen = false;
+            return api(path, opts); // retry once with new token
+          }
+        } finally {
+          api._promptOpen = false;
+        }
+      }
+    } else {
+      toast(`${r.status} ${txt}`, "bad");
+    }
     throw new Error(txt);
   }
   const ct = r.headers.get("content-type") || "";
@@ -151,6 +170,7 @@ $("#note-editor").addEventListener("input", (e) => {
 });
 
 $("#save-note").addEventListener("click", async () => {
+  if (!state.project) return toast("Select or create a project first", "bad");
   const path = $("#note-path").value.trim();
   if (!path) return toast("path required", "bad");
   const content = $("#note-editor").value;
@@ -180,6 +200,7 @@ $("#delete-note").addEventListener("click", async () => {
 });
 
 $("#new-note-btn").addEventListener("click", () => {
+  if (!state.project) return toast("Create a project first", "bad");
   $("#note-path").value = `notes/untitled-${Date.now()}.md`;
   $("#note-editor").value = "# Untitled\n\n";
   state.currentPath = null;
@@ -249,28 +270,39 @@ function renderMarkdown(src) {
     return `\n<ol>${items}</ol>`;
   });
 
+  // un-escape helper: the whole document was esc()'d up-front, but wikilink /
+  // attachment lookups need the raw filename to match state.tree keys.
+  const unesc = (s) => s
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+
   // image embed: ![[file.png]]
   text = text.replace(/!\[\[([^\]]+)\]\]/g, (_, name) => {
-    const src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(name.replace(/^attachments\//, ""))}`;
-    return `<img src="${src}" alt="${esc(name)}" style="max-width:100%"/>`;
+    const raw = unesc(name).replace(/^attachments\//, "");
+    const src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(raw)}`;
+    return `<img src="${esc(src)}" alt="${esc(raw)}" style="max-width:100%"/>`;
   });
   // markdown image: ![alt](path)
   text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, src) => {
-    if (!/^https?:/.test(src)) {
-      src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(src.replace(/^attachments\//, ""))}`;
+    const raw = unesc(src);
+    if (!/^https?:/.test(raw)) {
+      const rel = raw.replace(/^attachments\//, "");
+      src = `/api/projects/${encodeURIComponent(state.project)}/attachments/${encodeURIComponent(rel)}`;
+    } else {
+      src = raw;
     }
-    return `<img src="${src}" alt="${esc(alt)}" style="max-width:100%"/>`;
+    return `<img src="${esc(src)}" alt="${esc(alt)}" style="max-width:100%"/>`;
   });
   // inline: wikilinks, links, bold/italic, code, tags
   const knownPaths = new Set(state.tree.map((f) => f.path.replace(/\.md$/, "")));
   text = text.replace(/\[\[([^\]|#]+)(?:[|#]([^\]]+))?\]\]/g, (_, tgt, label) => {
-    const t = tgt.trim();
-    const display = esc(label || t.split("/").pop());
-    const match = knownPaths.has(t) ? t :
-      [...knownPaths].find((p) => p.endsWith(`/${t}`) || p === t);
+    const raw = unesc(tgt.trim());
+    const display = esc(label || raw.split("/").pop());
+    const match = knownPaths.has(raw) ? raw :
+      [...knownPaths].find((p) => p.endsWith(`/${raw}`) || p === raw);
     const cls = match ? "wikilink" : "wikilink dangling";
     const href = match ? `#open:${encodeURIComponent(match + ".md")}` : "#";
-    return `<a class="${cls}" href="${href}">${display}</a>`;
+    return `<a class="${cls}" href="${esc(href)}">${display}</a>`;
   });
   text = text.replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
@@ -332,12 +364,27 @@ async function loadFileHistory() {
     ? rows.map((r) => `<div class="item" data-hash="${r.hash}">
         ${esc(r.msg)}<span class="meta">${new Date(r.ts * 1000).toLocaleString()} · ${r.hash.slice(0,7)}</span></div>`).join("")
     : `<div class="item" style="color:var(--muted)">No history.</div>`;
-  $$("#file-history .item").forEach((el) => el.addEventListener("click", async () => {
-    if (!confirm(`Restore ${state.currentPath} to ${el.dataset.hash.slice(0,8)}?`)) return;
-    await api(`/projects/${state.project}/history/restore?commit=${el.dataset.hash}&path=${encodeURIComponent(state.currentPath)}`, { method: "POST" });
-    toast("Restored");
-    await openNote(state.currentPath);
-  }));
+  $$("#file-history .item[data-hash]").forEach((el) => el.addEventListener("click", () => previewRestore(el.dataset.hash)));
+}
+
+// Two-step restore: first click shows the old content in the editor (read-only
+// preview); a second confirm writes it back.
+async function previewRestore(hash) {
+  if (!state.currentPath) return;
+  const url = `/projects/${state.project}/history/show?commit=${hash}&path=${encodeURIComponent(state.currentPath)}`;
+  const old = await api(url);
+  const short = hash.slice(0, 8);
+  const ok = confirm(
+    `Restore ${state.currentPath} to commit ${short}?\n\n` +
+    `Preview (first 300 chars):\n\n` +
+    String(old).slice(0, 300) +
+    (String(old).length > 300 ? "\n…" : "") +
+    `\n\nYour current content will be replaced (but remains in Git history).`
+  );
+  if (!ok) return;
+  await api(`/projects/${state.project}/history/restore?commit=${hash}&path=${encodeURIComponent(state.currentPath)}`, { method: "POST" });
+  toast("Restored");
+  await openNote(state.currentPath);
 }
 
 // ---------- search palette ----------
@@ -380,8 +427,24 @@ document.addEventListener("click", (e) => {
 
 // ---------- graph ----------
 async function loadGraph() {
-  if (!state.project) return;
+  const canvas = $("#graph-canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = canvas.clientWidth || 960;
+  canvas.height = canvas.clientHeight || 560;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!state.project) {
+    ctx.fillStyle = "#8b93a7";
+    ctx.font = "14px sans-serif";
+    ctx.fillText("Select or create a project to see its graph.", 20, 30);
+    return;
+  }
   const g = await api(`/projects/${state.project}/graph`);
+  if (!g.nodes.length) {
+    ctx.fillStyle = "#8b93a7";
+    ctx.font = "14px sans-serif";
+    ctx.fillText("No notes yet — add a Markdown file and it'll appear here.", 20, 30);
+    return;
+  }
   drawGraph(g);
 }
 function drawGraph({ nodes, edges }) {
@@ -458,13 +521,18 @@ async function loadSync() {
 
 // ---------- project history ----------
 async function loadHistory() {
-  if (!state.project) return;
+  if (!state.project) {
+    $("#history-table tbody").innerHTML =
+      `<tr><td colspan="5" style="color:var(--muted)">Select or create a project first.</td></tr>`;
+    return;
+  }
   const rows = await api(`/projects/${state.project}/history`);
-  $("#history-table tbody").innerHTML = rows.map((r) => `
+  $("#history-table tbody").innerHTML = rows.length ? rows.map((r) => `
     <tr><td>${new Date(r.ts*1000).toLocaleString()}</td>
     <td>${esc(r.author)}</td><td>${esc(r.msg)}</td>
     <td><code>${r.hash.slice(0,8)}</code></td>
-    <td><button class="ghost" data-hash="${r.hash}">Diff</button></td></tr>`).join("");
+    <td><button class="ghost" data-hash="${r.hash}">Diff</button></td></tr>`).join("")
+    : `<tr><td colspan="5" style="color:var(--muted)">No commits yet.</td></tr>`;
   $("#diff-view").hidden = true;
   $$("#history-table button[data-hash]").forEach((b) => b.addEventListener("click", async () => {
     const diff = await api(`/projects/${state.project}/history/diff?commit=${b.dataset.hash}`);
@@ -506,8 +574,13 @@ $("#token-btn").addEventListener("click", () => {
 });
 
 // ---------- SSE live ----------
+let _sse = null;
+let _sseRetry = null;
 function startSSE() {
+  if (_sse) { _sse.close(); _sse = null; }
+  if (_sseRetry) { clearTimeout(_sseRetry); _sseRetry = null; }
   const es = new EventSource("/api/events");
+  _sse = es;
   es.addEventListener("fs", (ev) => {
     const d = JSON.parse(ev.data);
     if (d.project === state.project) {
@@ -521,14 +594,23 @@ function startSSE() {
     if ($("nav.views button.active").dataset.view === "hermes") loadHermes();
   });
   es.addEventListener("project", loadProjects);
-  es.onerror = () => setTimeout(startSSE, 3000);
+  es.onerror = () => {
+    if (es.readyState !== EventSource.CLOSED) es.close();
+    if (_sse === es) _sse = null;
+    if (!_sseRetry) _sseRetry = setTimeout(startSSE, 3000);
+  };
 }
 
 // ---------- boot ----------
 (async function boot() {
   await loadProjects();
-  await loadTree();
-  setView("editor");
+  if (!state.projects.length) {
+    setView("projects");
+    toast("No projects yet — create your first below.");
+  } else {
+    await loadTree();
+    setView("editor");
+  }
   startSSE();
   setInterval(() => {
     const v = $("nav.views button.active").dataset.view;

@@ -62,7 +62,6 @@ def _run_worker(vault_dir: Path, q: _ProjectQueue) -> None:
         with q.lock:
             if q.pending_reason:
                 continue
-            # no new work
             q.worker = None
             return
 

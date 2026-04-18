@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api", tags=["projects"])
 
 
 class NewProject(BaseModel):
-    slug: str = Field(min_length=2, max_length=48)
+    slug: str = Field(min_length=2, max_length=49)
     display_name: str = Field(min_length=1, max_length=100)
 
 

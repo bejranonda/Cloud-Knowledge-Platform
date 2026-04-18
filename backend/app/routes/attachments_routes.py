@@ -37,11 +37,12 @@ async def upload_attachment(slug: str, file: UploadFile = File(...)) -> dict:
     name = _sanitise(file.filename or "upload")
     target = safe_path(proj, f"attachments/{name}")
 
-    # Avoid clobber: append -1, -2, ... if exists
+    # Avoid clobber: append -1, -2, ... if exists. Re-validate each candidate
+    # through safe_path so the target can never drift outside the vault.
     stem, suffix = target.stem, target.suffix
     n = 1
     while target.exists():
-        target = att_dir / f"{stem}-{n}{suffix}"
+        target = safe_path(proj, f"attachments/{stem}-{n}{suffix}")
         n += 1
 
     total = 0

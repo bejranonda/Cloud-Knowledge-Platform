@@ -32,6 +32,17 @@ cp .env.example .env && $EDITOR .env   # set CKP_ADMIN_TOKEN and CouchDB creds
 # point DNS A record to this box; Caddy handles TLS automatically
 ```
 
+**Lab / dev boxes (no prereqs):** If the machine has nothing pre-installed, use
+`bootstrap` instead of `deploy`. It installs all OS dependencies first, then runs
+`install` and `start` for a local dev server:
+
+```bash
+sudo ./scripts/server.sh bootstrap
+```
+
+Use `deploy` for production (systemd service, Caddy TLS, `ckp` system user);
+use `bootstrap` for throwaway dev environments only.
+
 ---
 
 ## Day-2 operations
@@ -40,6 +51,7 @@ cp .env.example .env && $EDITOR .env   # set CKP_ADMIN_TOKEN and CouchDB creds
 
 ```bash
 systemctl status ckp
+curl -fs localhost:8787/api/health      # direct probe (bypasses Caddy/TLS)
 curl https://<host>/api/health          # {"status":"ok","auth_required":true}
 ```
 

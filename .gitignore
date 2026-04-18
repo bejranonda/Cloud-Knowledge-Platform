@@ -7,3 +7,4 @@ vaults/
 data/
 .env
 .DS_Store
+.dev/

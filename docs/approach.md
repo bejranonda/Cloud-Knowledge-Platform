@@ -42,6 +42,23 @@ The orchestrator always **reads the result critically**, wires it up, and keeps 
 3. **Move code into a new file only after the feature it enables is on disk.** No "scaffolding" commits.
 4. **Delete ruthlessly.** Unused = gone. Don't keep fallbacks, feature flags, or compatibility shims for users who don't exist.
 
+## Recent lessons
+
+**Always filter filesystem events explicitly.** The v0.3.1 watcher feedback-loop bug
+showed that reacting to every watchdog event type is dangerous: non-mutating events
+(`opened`, `closed`) caused `search.update_file()` to read the file, which itself
+generated more `opened` events, keeping `last_event_ts` perpetually bumped and
+silencing Git commits. The lesson: define an explicit allowlist of mutating event
+types (`_MUTATING`) and discard everything else. Never assume "extra" events are
+harmless noise.
+
+**Fully relative HTML paths demand a root mount.** When `index.html` loads assets
+with bare relative paths (`src="app.js"`, `href="styles.css"`), the static file
+server must be mounted at `/`. Mounting at `/ui/` means requests for `/app.js` hit
+the API router, not the file server. The lesson: check the mount path against the
+HTML asset references before shipping; mismatched paths produce silent 404s that
+are hard to diagnose in production.
+
 ## What this project deliberately does NOT have
 
 - An ORM. The registry is one JSON file; vault data is the filesystem; Git is Git.

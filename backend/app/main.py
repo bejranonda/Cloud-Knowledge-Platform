@@ -6,7 +6,6 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import auth, events, sync_monitor, watcher, webdav
@@ -69,10 +68,9 @@ for r in (
 app.include_router(webdav.router, prefix="/webdav")
 
 
-# Frontend
+# Frontend — mounted LAST so API routes take precedence.
+# Mounting at "/" with html=True serves index.html on "/" AND makes all
+# sibling assets (styles.css, app.js, icon.svg, manifest.webmanifest) resolve
+# via their natural relative paths.
 if settings.frontend_dir.is_dir():
-    app.mount("/ui", StaticFiles(directory=str(settings.frontend_dir), html=True), name="ui")
-
-    @app.get("/")
-    def root() -> FileResponse:
-        return FileResponse(settings.frontend_dir / "index.html")
+    app.mount("/", StaticFiles(directory=str(settings.frontend_dir), html=True), name="frontend")

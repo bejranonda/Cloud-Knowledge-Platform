@@ -13,11 +13,17 @@ from .config import settings
 log = logging.getLogger(__name__)
 
 _IGNORED = (".git", ".obsidian", ".trash", ".registry")
+# Only react to events that mutate content. Newer watchdog emits opened /
+# closed / closed_no_write; reacting to those would create a feedback loop
+# because search.update_file() reads the file, which emits another "opened".
+_MUTATING = {"created", "modified", "deleted", "moved"}
 
 
 class _Handler(FileSystemEventHandler):
     def on_any_event(self, event: FileSystemEvent) -> None:
         if event.is_directory:
+            return
+        if event.event_type not in _MUTATING:
             return
         try:
             rel = Path(event.src_path).resolve().relative_to(settings.vaults_root)

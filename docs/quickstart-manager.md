@@ -11,7 +11,7 @@ server admin.
 
 The server admin gives you `CKP_ADMIN_TOKEN` (or a scoped equivalent).
 
-1. Open the dashboard at `https://<server>/`.
+1. Open the dashboard at `https://<server>/` (plain root — not `/ui/`).
 2. Click the **🔑** button in the header.
 3. Paste your token and confirm. The UI stores it in `localStorage` for the
    session. You now have full write access through the dashboard.

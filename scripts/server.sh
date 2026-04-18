@@ -2,6 +2,7 @@
 # server.sh — single entry point for all server-side lifecycle operations.
 #
 # Usage:
+#   ./scripts/server.sh bootstrap          # one-shot: OS prereqs + install + start
 #   ./scripts/server.sh install            # dev install: venv + deps + couchdb
 #   ./scripts/server.sh start              # run backend in foreground (dev)
 #   ./scripts/server.sh deploy             # production provision (sudo)
@@ -25,6 +26,62 @@ step() { echo ""; echo "── $* ──"; }
 
 require_root() {
   [ "$(id -u)" -eq 0 ] || die "run as root (sudo $0 $*)"
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# bootstrap — from-bare-system one-shot.
+# Installs every OS-level prereq via apt (needs sudo), then runs `install`
+# and launches `start` in the foreground.
+# ─────────────────────────────────────────────────────────────────────────────
+cmd_bootstrap() {
+  local SUDO=""
+  if [ "$(id -u)" -ne 0 ]; then
+    command -v sudo >/dev/null 2>&1 || die "sudo not available. Re-run as root, or install sudo."
+    SUDO="sudo"
+  fi
+
+  if ! command -v apt-get >/dev/null 2>&1; then
+    die "bootstrap supports Debian/Ubuntu (apt). For other distros run 'install' manually after installing: python3, python3-venv, git, docker, docker-compose-plugin, curl, openssl."
+  fi
+
+  step "OS packages (apt)"
+  export DEBIAN_FRONTEND=noninteractive
+  $SUDO apt-get update -qq
+  # base packages
+  $SUDO apt-get install -y -qq \
+    python3 python3-venv python3-pip git curl ca-certificates openssl
+  # python3.X-venv may differ from the meta-package
+  local PY_VER
+  PY_VER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+  $SUDO apt-get install -y -qq "python${PY_VER}-venv" 2>/dev/null || true
+  log "base installed"
+
+  step "Docker + compose plugin"
+  if ! command -v docker >/dev/null 2>&1; then
+    $SUDO apt-get install -y -qq docker.io docker-compose-plugin || {
+      log "docker.io not in repo — falling back to get.docker.com script"
+      curl -fsSL https://get.docker.com | $SUDO sh
+      $SUDO apt-get install -y -qq docker-compose-plugin 2>/dev/null || true
+    }
+  else
+    log "docker already present"
+  fi
+  $SUDO systemctl enable --now docker >/dev/null 2>&1 || true
+
+  # Let the invoking user run docker without sudo next time (takes effect after re-login)
+  if [ -n "${SUDO_USER:-}" ]; then
+    $SUDO usermod -aG docker "$SUDO_USER" 2>/dev/null || true
+  elif [ "$(id -u)" -ne 0 ]; then
+    $SUDO usermod -aG docker "$USER" 2>/dev/null || true
+  fi
+
+  step "App install"
+  cmd_install
+
+  echo ""
+  log "Bootstrap complete. Starting backend (Ctrl+C to stop)…"
+  echo ""
+  cmd_start
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -229,19 +286,31 @@ cmd_backup() {
 # help
 # ─────────────────────────────────────────────────────────────────────────────
 cmd_help() {
-  grep '^# ' "$0" | sed 's/^# //' | head -n 12
+  cat <<'USAGE'
+Cloud Knowledge Platform — lifecycle
+
+  ./scripts/server.sh bootstrap          one-shot from bare Ubuntu (apt → install → start)
+  ./scripts/server.sh install            create venv, install deps, bring up CouchDB
+  ./scripts/server.sh start              run backend in the foreground (dev)
+  ./scripts/server.sh deploy             production provision: systemd + caddy (sudo)
+  ./scripts/server.sh upgrade            git pull + pip install + systemctl restart (sudo)
+  ./scripts/server.sh status             health probes
+  ./scripts/server.sh backup <dir>       git bundles + CouchDB dumps → .tgz
+  ./scripts/server.sh help               this message
+USAGE
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # dispatch
 # ─────────────────────────────────────────────────────────────────────────────
 case "${1:-help}" in
-  install)  shift; cmd_install  "$@";;
-  start)    shift; cmd_start    "$@";;
-  deploy)   shift; cmd_deploy   "$@";;
-  upgrade)  shift; cmd_upgrade  "$@";;
-  status)   shift; cmd_status   "$@";;
-  backup)   shift; cmd_backup   "$@";;
+  bootstrap) shift; cmd_bootstrap "$@";;
+  install)   shift; cmd_install   "$@";;
+  start)     shift; cmd_start     "$@";;
+  deploy)    shift; cmd_deploy    "$@";;
+  upgrade)   shift; cmd_upgrade   "$@";;
+  status)    shift; cmd_status    "$@";;
+  backup)    shift; cmd_backup    "$@";;
   help|-h|--help) cmd_help;;
   *) echo "unknown subcommand: $1" >&2; cmd_help; exit 2;;
 esac

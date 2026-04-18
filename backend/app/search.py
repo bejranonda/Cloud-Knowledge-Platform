@@ -55,10 +55,23 @@ def update_file(vault_dir: Path, abs_path: Path) -> None:
         rel = abs_path.relative_to(vault_dir).as_posix()
     except ValueError:
         return
+    # Read the file BEFORE taking the lock so concurrent `query()` calls
+    # aren't blocked on disk I/O.
+    text: str | None = None
+    stem_tokens: list[str] = []
+    if abs_path.is_file():
+        try:
+            text = abs_path.read_text(errors="ignore")
+            stem_tokens = _tokenise(abs_path.stem)
+        except OSError:
+            text = None
     with idx.lock:
         _remove(idx, rel)
-        if abs_path.is_file():
-            _insert(idx, vault_dir, abs_path)
+        if text is not None:
+            counts = Counter(_tokenise(text))
+            for term, n in counts.items():
+                idx.postings[term][rel] = n
+            idx.titles[rel] = stem_tokens
 
 
 def _remove(idx: _Index, rel: str) -> None:

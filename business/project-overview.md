@@ -21,6 +21,7 @@ A self-hosted platform on our Ubuntu cloud server that:
 - Every change reproducible from Git history.
 - Hermes processes new Info within 5 s of sync landing.
 - Hard multi-project isolation: an authenticated user for project A cannot read B.
+- Core flows (auth, note CRUD + commit, search, backlinks, history, WebDAV, attachments, per-project token scope, Hermes retrigger) validated by `pytest backend/tests` (10/10 passing as of v0.3.1).
 
 ## Out of scope (v1)
 - Public sharing / read-only publish.

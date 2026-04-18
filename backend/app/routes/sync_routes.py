@@ -19,4 +19,12 @@ def sync_status() -> list[dict]:
 
 @router.get("/events")
 async def sse() -> StreamingResponse:
-    return StreamingResponse(events.stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        events.stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )

@@ -56,6 +56,7 @@ All server-side operations are behind `scripts/server.sh` with subcommands:
 
 | Subcommand | Purpose | Root? |
 |---|---|---|
+| `bootstrap` | Installs all OS-level prerequisites (python3, python3-venv, git, docker.io, docker-compose-plugin, curl, openssl) via apt, then chains `install` → `start`. Suitable for bare Ubuntu dev boxes with nothing pre-installed. | yes |
 | `install` | Dev venv + deps + `docker compose up couchdb` | no |
 | `start`   | Foreground uvicorn (dev) | no |
 | `deploy`  | Production provision: apt deps, `ckp` system user, venv, systemd unit, Caddy, CouchDB | yes |
@@ -63,6 +64,23 @@ All server-side operations are behind `scripts/server.sh` with subcommands:
 | `status`  | Health probes (backend, caddy, couchdb) + masked admin-token prefix | no |
 | `backup <dir>` | Per-project git bundles + CouchDB `_all_docs` dumps + registry/credentials, tarred | no |
 | `help`    | Print usage | no |
+
+## v0.3.1 fixes & behaviour
+
+**Watcher feedback-loop fix.** Prior to v0.3.1 the filesystem watcher reacted to
+all watchdog events including non-mutating ones (`opened`, `closed`,
+`closed_no_write`). `search.update_file()` reads the file on each event, which
+causes further `opened` events — creating an infinite feedback loop that
+continually bumped `last_event_ts` and prevented the debounced commit worker from
+ever firing. The fix: `watcher.py` now defines `_MUTATING = {created, modified,
+deleted, moved}` and ignores all other event types. Git commits from API writes now
+fire correctly.
+
+**Static asset mount.** Prior to v0.3.1, `StaticFiles` was mounted at `/ui/` but
+`index.html` used relative paths, so `styles.css`, `app.js`, `icon.svg`, and
+`manifest.webmanifest` returned 404. Fixed by mounting at `/` with `html=True`.
+`/api/*` and `/webdav/*` routes still take precedence because they are registered
+first. The dashboard is served from `https://<server>/` (plain root).
 
 Previous scripts (`install.sh`, `start.sh`, `deploy-server.sh`, `backup.sh`)
 were consolidated into this single dispatcher so operators only ever learn

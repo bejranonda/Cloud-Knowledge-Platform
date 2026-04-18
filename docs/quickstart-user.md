@@ -78,7 +78,7 @@ plugin treats it like any other file. Max size: **50 MB** per file.
 
 ## Checking what's on the cloud
 
-Open the web dashboard at `https://<server>/`.
+Open the web dashboard at `https://<server>/` (plain root — not `/ui/`).
 
 Click the **🔑** button in the header and paste your token. You can:
 

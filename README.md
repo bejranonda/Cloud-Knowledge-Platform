@@ -27,13 +27,20 @@ docker-compose.yml   CouchDB + backend
 ## Quick start
 
 ```bash
-./scripts/server.sh install    # Python deps + CouchDB via docker compose
-./scripts/server.sh start      # boot the FastAPI backend (foreground)
+./scripts/server.sh bootstrap  # one-shot from a bare Ubuntu: apt → install → start
 # open http://<server>:8787/
 ```
 
+Already have Docker + python3-venv? Use the shorter dev path:
+
+```bash
+./scripts/server.sh install    # venv + deps + CouchDB via docker compose
+./scripts/server.sh start      # boot the FastAPI backend (foreground)
+```
+
 `scripts/server.sh` is the single entry point for all server-side lifecycle
-operations: `install`, `start`, `deploy`, `upgrade`, `status`, `backup`, `help`.
+operations: `bootstrap`, `install`, `start`, `deploy`, `upgrade`, `status`,
+`backup`, `help`.
 
 Client setup: see [docs/client-setup.md](docs/client-setup.md).
 Architecture: see [docs/architecture.md](docs/architecture.md).

@@ -105,6 +105,20 @@ sudo chmod 600 /opt/ckp/.env
 
 ## Step 3 — Run the deploy script
 
+> **Non-production / lab alternative:** If you are on a bare Ubuntu box with no
+> prerequisites installed and you want the fastest possible path to a running
+> server (dev or lab use only — not hardened for production), run:
+>
+> ```bash
+> cd /opt/ckp
+> sudo ./scripts/server.sh bootstrap
+> ```
+>
+> `bootstrap` installs every OS-level prerequisite (`python3`, `python3-venv`,
+> `git`, `docker.io`, `docker-compose-plugin`, `curl`, `openssl`) via `apt`, then
+> automatically chains `install` → `start`. No manual prereq setup required. For
+> production deployments, continue with `deploy` below.
+
 ```bash
 cd /opt/ckp
 sudo ./scripts/server.sh deploy

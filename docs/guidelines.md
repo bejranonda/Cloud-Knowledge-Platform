@@ -16,6 +16,10 @@
 - `vaults/<proj>/.git` is the source of truth for history — never `git reset --hard` without a backup branch.
 - Use `scripts/server.sh <subcmd>` for *every* lifecycle operation. Do not re-introduce per-concern scripts; add a new subcommand instead.
 - CouchDB compaction weekly via cron; see `scripts/server.sh backup` for the scheduled companion job.
+- The watcher must only react to mutating events (`created`, `modified`, `deleted`, `moved`); ignoring `opened`/`closed` is load-bearing — reacting to them causes a search-read → open-event feedback loop that prevents the debounced commit from ever firing.
+
+## Frontend
+- Static assets are served from `/`; do not re-mount to `/ui/`. `index.html` uses relative paths so the mount point must be `/` with `html=True`, with `/api/*` and `/webdav/*` routes registered first to retain precedence.
 
 ## Change management
 - Every backend change must update `docs/architecture.md` if it alters component boundaries.
