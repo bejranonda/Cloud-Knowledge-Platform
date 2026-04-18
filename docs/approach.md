@@ -78,6 +78,12 @@ Before inventing a new subsystem, check whether it has already been solved in
   truth for vault layout, MetadataCache semantics, sync protocols, and the
   failure modes we hit in production (§8.1). The failure-modes section is
   the generalised sibling of `docs/known-issues.md`.
+- **Hermes Agent** (`reference/hermes/platform_blueprint.md`) — the real
+  system our `CKP_HERMES_BIN` invocation aspires to be. Read §4 (Learning
+  Loop) before designing anything that produces `wisdom/`, and consult
+  `reference/hermes/integration_notes.md` before changing the Hermes
+  subprocess contract — the upstream CLI has no `process` subcommand,
+  which constrains what `CKP_HERMES_BIN` can actually point at.
 
 Rule of thumb: **if you find yourself designing something that feels
 familiar, grep `reference/` before writing code.** If a blueprint covers the

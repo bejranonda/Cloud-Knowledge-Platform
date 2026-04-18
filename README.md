@@ -80,6 +80,9 @@ blueprints for the two external systems that most influenced this project:
   Conclusion/Representation/Dream pipeline, DIKW-T mapping.
 - [`reference/obsidian/`](reference/obsidian/) — vault model, MetadataCache,
   LiveSync, headless CLI, failure modes.
+- [`reference/hermes/`](reference/hermes/) — Hermes Agent (Nous Research):
+  self-improving loop, skill store, gateway, subagents, and how our stub
+  contract differs from the real CLI.
 
 Each `platform_blueprint.md` is complete enough that an AI given only that
 file could stand up a working equivalent. See

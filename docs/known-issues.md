@@ -20,6 +20,7 @@
 | 16 | Pre-DIKW vaults (created before v0.4) lack a `wisdom/` folder | Advisory | `mkdir -p vaults/<slug>/wisdom`; new projects get it automatically | v0.4 |
 | 17 | `wisdom/` remains empty until a wisdom-capable Hermes build is wired up | Roadmap | Classifier + folder are ready; the synthesis pass is future work | — |
 | 18 | Files outside the four stage folders are classified heuristically (frontmatter/wikilinks/hashtags) | By design | Normalise paths into a stage folder if strict classification is required | — |
+| 19 | Our `hermes-agent process …` contract is stub-only — the real Hermes CLI (Nous Research) has no `process` subcommand | Advisory | Use the passthrough stub in `docs/hermes-contract.md`, or a wrapper script; see `reference/hermes/integration_notes.md` for the three migration paths | — |
 
 File new issues in `docs/known-issues.md` with a date and reproduction path.
 

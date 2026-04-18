@@ -140,6 +140,15 @@ Notable mappings and take-aways worth knowing:
 - **LiveSync decision.** `reference/obsidian/obsidian-sync-comparison.md` is
   the table we cite when asked *why CouchDB + LiveSync* instead of an
   object-store + WebDAV-only design.
+- **Hermes ↔ DIKW-T.** `reference/hermes/platform_blueprint.md` §8 maps the
+  real Hermes Agent's agent loop, skill store, and session FTS5 onto our
+  Data/Information/Knowledge/Wisdom folders. §4 (Learning Loop) is the
+  pattern to copy if we ever want an endogenous Wisdom producer.
+- **Hermes integration reality.** `reference/hermes/integration_notes.md`
+  flags that the upstream Hermes CLI has no `process` subcommand — our
+  `CKP_HERMES_BIN` contract only works against the stub in
+  `docs/hermes-contract.md` or a wrapper script. Three migration paths are
+  documented there.
 
 Tour: `reference/README.md`.
 

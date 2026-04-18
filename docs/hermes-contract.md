@@ -54,3 +54,25 @@ Make it executable and place it on PATH (e.g. `/usr/local/bin/hermes-agent`).
 
 - `CKP_HERMES_BIN` — path or command name (default `hermes-agent`).
 - `CKP_HERMES_TIMEOUT` — per-file timeout in seconds (default `120`).
+
+## Important: the upstream Hermes CLI does NOT have `process`
+
+This contract defines **our** stage-promotion CLI. The real
+[Hermes Agent by Nous Research](https://hermes-agent.nousresearch.com/docs)
+exposes an interactive TUI (`hermes`), a gateway (`hermes gateway`), and
+setup/model/tools helpers — but **no `process` subcommand**. Pointing
+`CKP_HERMES_BIN` at a real `hermes` binary will fail.
+
+To run a real Hermes Agent against this platform you have three options:
+
+1. **Wrapper script** (recommended for v0.4) — a `hermes-agent` script on
+   PATH that internally invokes `hermes eval ...` or the Python entry point
+   and writes the result to `--output-dir`. Keeps our contract stable.
+2. **Direct Python import** — replace `backend/app/hermes.py` subprocess
+   with in-process calls to Hermes's `AIAgent.run_conversation()`.
+3. **Adopt Hermes's CLI shape** — rewrite our bridge to use
+   `hermes --skill promote_to_knowledge --input <file>`. Biggest change,
+   but aligns CKP with the upstream ecosystem.
+
+Full analysis: `reference/hermes/integration_notes.md`. Reconstruction-grade
+Hermes internals: `reference/hermes/platform_blueprint.md` (local, gitignored).
