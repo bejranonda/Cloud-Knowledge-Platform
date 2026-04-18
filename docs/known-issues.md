@@ -22,3 +22,11 @@
 | 18 | Files outside the four stage folders are classified heuristically (frontmatter/wikilinks/hashtags) | By design | Normalise paths into a stage folder if strict classification is required | — |
 
 File new issues in `docs/known-issues.md` with a date and reproduction path.
+
+## See also
+
+Generalised failure modes (MetadataCache staleness, binary-in-vault, mount-path
+404, watcher feedback loop) are cross-referenced in
+`reference/obsidian/platform_blueprint.md` §8.1. The items above are this
+project's specific incident log; that section is the broader pattern
+catalogue.

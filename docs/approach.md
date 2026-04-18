@@ -64,6 +64,26 @@ the API router, not the file server. The lesson: check the mount path against th
 HTML asset references before shipping; mismatched paths produce silent 404s that
 are hard to diagnose in production.
 
+## Method: learning from external systems
+
+Before inventing a new subsystem, check whether it has already been solved in
+`reference/`. Our two anchor blueprints are reconstruction-grade:
+
+- **Honcho** (`reference/honcho/platform_blueprint.md`) — the clearest prior
+  art for stage-promotion pipelines. Its Conclusion → Representation → Dream
+  sequence is structurally identical to our DIKW-T Information → Knowledge →
+  Wisdom chain (§8.2 makes the mapping explicit). When in doubt about how a
+  memory-consolidation feature should behave, consult this file first.
+- **Obsidian** (`reference/obsidian/platform_blueprint.md`) — the ground
+  truth for vault layout, MetadataCache semantics, sync protocols, and the
+  failure modes we hit in production (§8.1). The failure-modes section is
+  the generalised sibling of `docs/known-issues.md`.
+
+Rule of thumb: **if you find yourself designing something that feels
+familiar, grep `reference/` before writing code.** If a blueprint covers the
+same shape, either reuse its vocabulary or explain in a comment why we
+diverge. Divergences without a reason rot into quiet incompatibility.
+
 ## What this project deliberately does NOT have
 
 - An ORM. The registry is one JSON file; vault data is the filesystem; Git is Git.

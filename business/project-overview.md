@@ -11,7 +11,9 @@ A self-hosted platform on our Ubuntu cloud server organised around the **DIKW-T 
 3. Preserves the full evolution of every project in Git — the **Time** axis is a first-class property, not an afterthought.
 4. Automates stage progression via the pre-installed **Hermes Agent**: Data (`inbox/`) → Information (`notes/`) → Knowledge (`knowledge/`) → Wisdom (`wisdom/`, time-series reasoning over Git history).
 
-See [docs/dikw-t.md](../docs/dikw-t.md) for the authoritative framework.
+See [docs/dikw-t.md](../docs/dikw-t.md) for the authoritative framework, and
+[reference/](../reference/) for the external blueprints (Honcho, Obsidian)
+that informed the design.
 
 ## Stakeholders
 - **Admin** — owns the server, manages projects and credentials.

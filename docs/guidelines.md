@@ -40,6 +40,19 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
 - Bugs → `docs/known-issues.md` with date + repro.
 - User-visible behaviour change → update README + `client-setup.md`.
 
+## Reference material
+
+- `reference/` holds reverse-engineering-grade blueprints for Honcho and
+  Obsidian. Use them when designing features that echo those systems; cite
+  the specific section (`reference/<vendor>/<file>.md` §N) in PR
+  descriptions so the lineage is visible.
+- Do **not** edit files under `reference/` to reflect our own changes — they
+  describe the external systems, not ours. Update `docs/` for project-side
+  changes; update `reference/` only when the external system itself changes
+  or when we've verified a technical detail about it.
+- `reference/README.md` is the tour. Start there when the folder is new to
+  you.
+
 ## Continuous validation
 - After any non-trivial change run `./.venv/bin/pytest backend/tests -q` until green twice in a row.
 - `grep -r "Info → Knowledge" docs/ || true` should be empty — the canonical phrasing is the full DIKW-T chain.

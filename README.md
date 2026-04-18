@@ -24,7 +24,7 @@ per-project Git repo as the time-series backbone. See
 backend/      FastAPI service (sync monitor, projects, graph, versioning, watcher, Hermes bridge)
 frontend/     Static dashboard (no build step)
 docs/         Architecture, client setup, knowledge base, known issues, guidelines
-reference/    External references and comparison notes
+reference/    External blueprints (Honcho, Obsidian) — reconstruction-grade specs
 business/     Project scope, stakeholders, success criteria
 scripts/      install.sh / start.sh
 docker-compose.yml   CouchDB + backend
@@ -70,6 +70,20 @@ Role-specific guides for getting productive fast:
 - [docs/quickstart-user.md](docs/quickstart-user.md) — end user who wants to take notes in Obsidian and have them sync automatically.
 - [docs/quickstart-manager.md](docs/quickstart-manager.md) — team manager who creates projects, onboards teammates, and monitors Hermes output.
 - [docs/quickstart-admin.md](docs/quickstart-admin.md) — server admin who owns the Ubuntu box, Docker, Caddy, and backups.
+
+## Reverse-engineering references
+
+The [`reference/`](reference/) folder contains **reconstruction-grade**
+blueprints for the two external systems that most influenced this project:
+
+- [`reference/honcho/`](reference/honcho/) — ambient personalisation,
+  Conclusion/Representation/Dream pipeline, DIKW-T mapping.
+- [`reference/obsidian/`](reference/obsidian/) — vault model, MetadataCache,
+  LiveSync, headless CLI, failure modes.
+
+Each `platform_blueprint.md` is complete enough that an AI given only that
+file could stand up a working equivalent. See
+[`reference/README.md`](reference/README.md) for a guided tour.
 
 ## Contributing
 

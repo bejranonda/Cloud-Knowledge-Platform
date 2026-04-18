@@ -120,6 +120,29 @@ one command surface.
 | API | `/api/projects/{slug}/…` prefix + permission check |
 | Hermes | Per-project working dir + env |
 
+## External references (reconstruction-grade)
+
+The `reference/` folder carries self-contained blueprints for the two external
+systems that shape this platform: **Honcho** (ambient personalisation) and
+**Obsidian** (local-first PKM). Each `platform_blueprint.md` is complete
+enough that an AI given only that file can rebuild a working equivalent. We
+keep them because (a) if either upstream disappears we can still ship, and
+(b) their design patterns routinely inform our own code.
+
+Notable mappings and take-aways worth knowing:
+
+- **Honcho ↔ DIKW-T.** `reference/honcho/platform_blueprint.md` §8.2 maps
+  Honcho's Conclusions → our `notes/` (Information), Representations →
+  `knowledge/`, Dream consolidation → `wisdom/`. Parallel is exact.
+- **Obsidian failure modes.** `reference/obsidian/platform_blueprint.md` §8.1
+  is the generalised form of our `docs/known-issues.md`: watcher feedback
+  loop, MetadataCache staleness, mount-path 404, large-binary-in-vault.
+- **LiveSync decision.** `reference/obsidian/obsidian-sync-comparison.md` is
+  the table we cite when asked *why CouchDB + LiveSync* instead of an
+  object-store + WebDAV-only design.
+
+Tour: `reference/README.md`.
+
 ## DIKW-T classifier
 
 `backend/app/dikw.py` classifies every `.md` in a vault into `data`,

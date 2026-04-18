@@ -18,7 +18,7 @@ Time-series isn't a folder — every stage is versioned in the per-project Git r
 - `backend/app/` — FastAPI service. Entry: `backend/app/main.py`.
 - `frontend/` — static dashboard, no build step. Served by FastAPI.
 - `docs/` — authoritative docs for architecture, client setup, knowledge, issues, guidelines.
-- `reference/` — external comparisons.
+- `reference/` — external blueprints (Honcho, Obsidian) complete enough to rebuild those platforms from scratch. See `reference/README.md` for the map. Do not edit these to reflect our own changes — edit `docs/` for that.
 - `business/` — scope and stakeholders.
 - `scripts/` — bootstrap + run.
 
