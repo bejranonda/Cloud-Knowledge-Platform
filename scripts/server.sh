@@ -34,6 +34,17 @@ cmd_install() {
   cd "$REPO_DIR"
 
   step "Python venv + deps"
+  # Ensure python3-venv is available (Ubuntu/Debian ships it separately)
+  if ! python3 -c "import ensurepip" 2>/dev/null; then
+    PY_VER="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+    log "python3-venv missing — attempting install (needs sudo)..."
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get install -y -qq "python${PY_VER}-venv" python3-venv || \
+        die "Could not install python3-venv. Run manually: sudo apt install python${PY_VER}-venv"
+    else
+      die "python3 venv unavailable. Install with your package manager (e.g. python${PY_VER}-venv)."
+    fi
+  fi
   python3 -m venv .venv
   # shellcheck disable=SC1091
   . .venv/bin/activate
