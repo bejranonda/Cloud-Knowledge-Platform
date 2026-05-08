@@ -63,6 +63,21 @@ Technical users on macOS, Linux, or Windows can run the helper scripts in
 For a hardened production install (systemd service, Caddy TLS, CouchDB in
 Docker, idempotent deploy script) see **[docs/setup-server.md](docs/setup-server.md)**.
 
+**One-shot from a bare box:** if you have a fresh Ubuntu/Debian VM and just
+want it provisioned end-to-end (apt prereqs → clone repo → generate `.env` →
+`server.sh deploy`), run:
+
+```bash
+sudo DOMAIN=ckp.example.com ./scripts/deploy-new-server.sh
+# or curl-pipe directly onto the new box:
+curl -fsSL https://raw.githubusercontent.com/bejranonda/Cloud-Knowledge-Platform/main/scripts/deploy-new-server.sh \
+  | sudo DOMAIN=ckp.example.com bash
+```
+
+`deploy-new-server.sh` is the wrapper that bootstraps a brand-new server;
+`server.sh deploy` is the lower-level command it ultimately invokes. Use the
+wrapper on first install, `server.sh upgrade` thereafter.
+
 ## Quickstarts
 
 Role-specific guides for getting productive fast:

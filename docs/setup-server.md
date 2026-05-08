@@ -22,6 +22,36 @@ via `apt-get`, so you only need a working Ubuntu system with `sudo`.
 
 ---
 
+## Step 0 — Single-command provision (bare-box fast path)
+
+If you have a fresh Ubuntu/Debian VM and want the whole pipeline installed in
+one go, skip steps 1–3 and run the wrapper script:
+
+```bash
+# As root on the new server:
+curl -fsSL https://raw.githubusercontent.com/bejranonda/Cloud-Knowledge-Platform/main/scripts/deploy-new-server.sh \
+  | sudo DOMAIN=ckp.example.com ADMIN_EMAIL=ops@example.com bash
+```
+
+What it does (idempotent):
+
+1. `apt install` for `git`, `curl`, `openssl`.
+2. Clones the repo to `/opt/ckp` (override with `INSTALL_DIR=`, `REPO_URL=`,
+   `REPO_REF=`).
+3. Generates `/opt/ckp/.env` (chmod 600) with a random `CKP_ADMIN_TOKEN` and
+   `COUCHDB_PASSWORD` — only if `.env` is missing.
+4. If `DOMAIN` is set, patches `deploy/caddy/Caddyfile` to use it (and
+   `ADMIN_EMAIL` for ACME contact, if provided).
+5. Hands off to `./scripts/server.sh deploy` — the production provisioner
+   (systemd, Caddy, Docker CouchDB).
+6. Prints the freshly-generated admin token and next steps.
+
+The remaining sections below describe the same flow split into manual
+steps — useful when you want to inspect or override `.env` before the
+service starts. For a vanilla install, the wrapper is enough.
+
+---
+
 ## Step 1 — Clone and provision
 
 ```bash

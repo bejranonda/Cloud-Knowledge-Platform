@@ -27,7 +27,7 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
 ## Operating
 - Watch `journalctl -u ckp -f` for watcher/Git errors.
 - `vaults/<proj>/.git` is the source of truth for history — never `git reset --hard` without a backup branch.
-- Use `scripts/server.sh <subcmd>` for *every* lifecycle operation. Do not re-introduce per-concern scripts; add a new subcommand instead.
+- Use `scripts/server.sh <subcmd>` for *every* lifecycle operation. Do not re-introduce per-concern scripts; add a new subcommand instead. The one allowed exception is `scripts/deploy-new-server.sh`: it is a **bootstrap wrapper** for fresh boxes (clone + `.env` generation + Caddy `DOMAIN` patch) and ends by handing off to `server.sh deploy`. It is install-only — never used for upgrades or runtime operations, so it does not violate the one-script rule.
 - CouchDB compaction weekly via cron; see `scripts/server.sh backup` for the scheduled companion job.
 - The watcher must only react to mutating events (`created`, `modified`, `deleted`, `moved`); ignoring `opened`/`closed` is load-bearing — reacting to them causes a search-read → open-event feedback loop that prevents the debounced commit from ever firing.
 

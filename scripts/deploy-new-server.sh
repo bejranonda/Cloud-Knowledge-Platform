@@ -75,8 +75,11 @@ if [ -n "$DOMAIN" ]; then
   step "Caddy domain: $DOMAIN"
   CADDY_SRC="$INSTALL_DIR/deploy/caddy/Caddyfile"
   if [ -f "$CADDY_SRC" ]; then
-    sed -i -E "s/^[[:space:]]*\{?\\\$?CKP_DOMAIN[^[:space:]]*/$DOMAIN/; s/example\.com/$DOMAIN/g" "$CADDY_SRC" || true
-    [ -n "$ADMIN_EMAIL" ] && sed -i -E "s/admin@example\.com/$ADMIN_EMAIL/g" "$CADDY_SRC" || true
+    # Replace the literal placeholder block from deploy/caddy/Caddyfile.
+    sed -i "s|{\$CKP_DOMAIN:example.com}|$DOMAIN|g" "$CADDY_SRC"
+    if [ -n "$ADMIN_EMAIL" ]; then
+      sed -i "s|admin@example.com|$ADMIN_EMAIL|g" "$CADDY_SRC"
+    fi
     log "patched $CADDY_SRC"
   else
     log "no $CADDY_SRC found — skipping Caddy patch"
