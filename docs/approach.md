@@ -9,7 +9,7 @@ Why this codebase looks the way it does, and the rules we follow when changing i
 2. **Every change is a commit.** Users never see the Git repo directly, but every write path — LiveSync, WebDAV, API, Web-App, restore, Hermes — funnels through `versioning.schedule_commit`. Debounced 2 s; never silent.
 3. **Per-project isolation is physical, not logical.** A CouchDB DB, a vault dir, a Git repo, a Hermes workdir. No shared tables, no "tenant_id" columns. Cheaper to reason about than to enforce.
 4. **Zero-build frontend.** Plain HTML + ES modules + vanilla CSS. Adding a bundler is a last resort, not a default.
-5. **Operate with one script.** `scripts/server.sh` is the only lifecycle surface. Subcommands, not new files.
+5. **Operate with one script.** `scripts/server.sh` is the only lifecycle surface. Subcommands, not new files. The single exception is `scripts/deploy-new-server.sh`, an install-only wrapper that exists *outside* the lifecycle loop: it bootstraps a bare box (clone + `.env` + optional `DOMAIN` Caddyfile patch) and ends by calling `server.sh deploy`. It can't replace any subcommand, and once the server is running it's never re-invoked.
 6. **Auth is opt-in for dev, mandatory for prod.** No `CKP_ADMIN_TOKEN` → full open access. Set it and the platform enforces it everywhere (API, WebDAV, per-project tokens).
 
 ## Method: how we add a feature
@@ -56,6 +56,15 @@ generated more `opened` events, keeping `last_event_ts` perpetually bumped and
 silencing Git commits. The lesson: define an explicit allowlist of mutating event
 types (`_MUTATING`) and discard everything else. Never assume "extra" events are
 harmless noise.
+
+**Bootstrap wrappers go *outside* the lifecycle script, not inside it.** When
+`deploy-new-server.sh` was first considered, the obvious instinct was to add it
+as another `server.sh` subcommand. But its concerns — `apt install git`, `git
+clone` of the repo itself, generating `.env` from scratch — happen *before*
+the repo's own scripts can be assumed to exist or be runnable in the right
+working directory. A bootstrap script can only live above its target. The
+lesson: *one-script lifecycle* applies to operations on an installed system;
+fresh-install glue is a separate layer and should be named that way.
 
 **Fully relative HTML paths demand a root mount.** When `index.html` loads assets
 with bare relative paths (`src="app.js"`, `href="styles.css"`), the static file

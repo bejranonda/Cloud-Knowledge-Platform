@@ -24,10 +24,22 @@ Time-series isn't a folder — every stage is versioned in the per-project Git r
 
 ## How to run locally
 ```
-./scripts/server.sh bootstrap         # bare Ubuntu → installed → started
+./scripts/server.sh bootstrap         # bare Ubuntu → installed → started (dev/lab)
 # or, if OS prereqs are already present:
 ./scripts/server.sh install && ./scripts/server.sh start
 ```
+
+## How to deploy to a new server
+```
+sudo DOMAIN=ckp.example.com ./scripts/deploy-new-server.sh   # production wrapper
+```
+Single-command bootstrap of a fresh Ubuntu/Debian box: installs prereqs,
+clones the repo to `/opt/ckp`, generates `.env` with random secrets,
+optionally patches `deploy/caddy/Caddyfile` with `DOMAIN`, then runs
+`server.sh deploy`. Install-only — for ongoing ops use `server.sh upgrade`
+and friends. Never add ops behaviour here; if it isn't first-install glue,
+it belongs in `server.sh`.
+
 Backend listens on `:8787` and serves the frontend at `/` (NOT `/ui/` — it
 used to, fixed in v0.3.1). CouchDB on `:5984`. Vaults are in `./vaults/`.
 

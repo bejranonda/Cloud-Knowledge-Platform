@@ -21,6 +21,7 @@
 | 17 | `wisdom/` remains empty until a wisdom-capable Hermes build is wired up | Stub landed (v0.5) | Deterministic Git-log-based stub; `POST /wisdom/synthesise` or the DIKW dashboard button. Swap for a real LLM pass later. | v0.5 |
 | 18 | Files outside the four stage folders are classified heuristically (frontmatter/wikilinks/hashtags) | By design | Normalise paths into a stage folder if strict classification is required | — |
 | 19 | Our `hermes-agent process …` contract is stub-only — the real Hermes CLI (Nous Research) has no `process` subcommand | Advisory | Use the passthrough stub in `docs/hermes-contract.md`, or a wrapper script; see `reference/hermes/integration_notes.md` for the three migration paths | — |
+| 20 | First-time install on a fresh VM previously required ~5 manual steps (clone, .env edit, prereq install, deploy, Caddy domain patch) | Resolved | `scripts/deploy-new-server.sh` collapses the whole bare-box → running-service path into one curl-pipe-friendly command with `DOMAIN=` for the Caddyfile and auto-generated secrets | v0.5.1 |
 
 File new issues in `docs/known-issues.md` with a date and reproduction path.
 

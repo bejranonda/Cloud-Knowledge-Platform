@@ -69,6 +69,7 @@ All server-side operations are behind `scripts/server.sh` with subcommands:
 | Subcommand | Purpose | Root? |
 |---|---|---|
 | `bootstrap` | Installs all OS-level prerequisites (python3, python3-venv, git, docker.io, docker-compose-plugin, curl, openssl) via apt, then chains `install` → `start`. Suitable for bare Ubuntu dev boxes with nothing pre-installed. | yes |
+| `deploy-new-server.sh` (separate script) | One-shot **production** wrapper for a brand-new server: apt prereqs → `git clone` → generate `.env` (random `CKP_ADMIN_TOKEN` + CouchDB password) → optional Caddyfile `DOMAIN` patch → `server.sh deploy`. Curl-pipe friendly. Use on first install only; thereafter use `upgrade`. | yes |
 | `install` | Dev venv + deps + `docker compose up couchdb` | no |
 | `start`   | Foreground uvicorn (dev) | no |
 | `deploy`  | Production provision: apt deps, `ckp` system user, venv, systemd unit, Caddy, CouchDB | yes |
