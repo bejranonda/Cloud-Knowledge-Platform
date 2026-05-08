@@ -5,11 +5,20 @@ This file is the fast on-ramp for an AI agent (Claude / others) picking up work 
 ## What this project is
 Self-hosted replacement for Obsidian Sync + a Web-App admin layer + Git history + a Hermes Agent pipeline. See `README.md` and `docs/architecture.md`.
 
+## The mental model: DIKW-T
+The system is a **DIKW-T pyramid** (Data → Information → Knowledge → Wisdom + Time). One folder per stage in every vault:
+- `inbox/` = **Data** (raw capture)
+- `notes/` = **Information** (tagged, linked, with frontmatter)
+- `knowledge/` = **Knowledge** (Hermes-synthesised evergreen notes)
+- `wisdom/` = **Wisdom + Time** (agent-authored "why it changed" notes citing Git history)
+
+Time-series isn't a folder — every stage is versioned in the per-project Git repo. Classifier + `/api/projects/{slug}/dikw` summary live in `backend/app/dikw.py`. Authoritative spec: `docs/dikw-t.md`. Keep this model in mind when adding features; new content usually belongs in one of these four folders.
+
 ## Where things live
 - `backend/app/` — FastAPI service. Entry: `backend/app/main.py`.
 - `frontend/` — static dashboard, no build step. Served by FastAPI.
 - `docs/` — authoritative docs for architecture, client setup, knowledge, issues, guidelines.
-- `reference/` — external comparisons.
+- `reference/` — external blueprints (Honcho, Obsidian) complete enough to rebuild those platforms from scratch. See `reference/README.md` for the map. Do not edit these to reflect our own changes — edit `docs/` for that.
 - `business/` — scope and stakeholders.
 - `scripts/` — bootstrap + run.
 
@@ -34,9 +43,12 @@ Running tests:
 - Don't add features speculatively. If requirements unclear, ask.
 
 ## Common tasks
-- **Add an endpoint**: edit `backend/app/main.py`; keep business logic in the relevant module.
+- **Add an endpoint**: add a route module under `backend/app/routes/` and register it in `backend/app/main.py`. Keep business logic in a sibling domain module.
 - **Change commit cadence**: `backend/app/versioning.py` (`DEBOUNCE_SECONDS`).
 - **Hermes invocation**: `backend/app/hermes.py` — the subprocess call is the one thing you tune per deployment.
+- **Wisdom synthesis**: `backend/app/wisdom.py` — stub today (Git-log summariser); swap `_synthesise()` body for a real LLM pass later.
+- **Search behaviour**: `backend/app/search.py` — SQLite FTS5 per project at `<vault>/.ckp/search.db`; bm25 with title column weighted 5×.
+- **Stage promotion endpoint**: `backend/app/routes/stages_routes.py` — `POST /promote` (inbox → notes) and `POST /wisdom/synthesise`.
 - **New project field**: update `backend/app/projects.py` model + the `/projects` view in `frontend/app.js`.
 
 ## Gotchas

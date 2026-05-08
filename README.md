@@ -2,6 +2,12 @@
 
 A self-hosted PKM + sync gateway that replaces paid Obsidian Sync with a 100% free stack on Ubuntu. It synchronises Obsidian vaults across devices, versions every change in Git, exposes a Web-App for admin/data management, and dispatches new "Info" notes to the **Hermes Agent** which converts them into structured "Knowledge".
 
+The pipeline is organised around the **DIKW-T** pyramid
+(**D**ata → **I**nformation → **K**nowledge → **W**isdom + **T**ime) —
+one folder per stage (`inbox/`, `notes/`, `knowledge/`, `wisdom/`), plus the
+per-project Git repo as the time-series backbone. See
+[docs/dikw-t.md](docs/dikw-t.md) for the authoritative model.
+
 ## Capabilities
 
 - **Two sync options**: Self-hosted LiveSync (CouchDB) for real-time E2E encrypted sync, **or** a built-in WebDAV endpoint for Obsidian Remotely Save — no CouchDB needed for the WebDAV path.
@@ -18,7 +24,7 @@ A self-hosted PKM + sync gateway that replaces paid Obsidian Sync with a 100% fr
 backend/      FastAPI service (sync monitor, projects, graph, versioning, watcher, Hermes bridge)
 frontend/     Static dashboard (no build step)
 docs/         Architecture, client setup, knowledge base, known issues, guidelines
-reference/    External references and comparison notes
+reference/    External blueprints (Honcho, Obsidian) — reconstruction-grade specs
 business/     Project scope, stakeholders, success criteria
 scripts/      install.sh / start.sh
 docker-compose.yml   CouchDB + backend
@@ -64,6 +70,26 @@ Role-specific guides for getting productive fast:
 - [docs/quickstart-user.md](docs/quickstart-user.md) — end user who wants to take notes in Obsidian and have them sync automatically.
 - [docs/quickstart-manager.md](docs/quickstart-manager.md) — team manager who creates projects, onboards teammates, and monitors Hermes output.
 - [docs/quickstart-admin.md](docs/quickstart-admin.md) — server admin who owns the Ubuntu box, Docker, Caddy, and backups.
+
+## Reverse-engineering references
+
+The [`reference/`](reference/) folder contains **reconstruction-grade**
+blueprints for the two external systems that most influenced this project:
+
+- [`reference/honcho/`](reference/honcho/) — ambient personalisation,
+  Conclusion/Representation/Dream pipeline, DIKW-T mapping.
+- [`reference/obsidian/`](reference/obsidian/) — vault model, MetadataCache,
+  LiveSync, headless CLI, failure modes.
+- [`reference/hermes/`](reference/hermes/) — Hermes Agent (Nous Research):
+  self-improving loop, skill store, gateway, subagents, and how our stub
+  contract differs from the real CLI.
+- [`reference/livesync/`](reference/livesync/) — Self-hosted LiveSync:
+  CouchDB doc model, chunking, E2E encryption flow, conflict resolution,
+  and the cleartext-materialisation tradeoff we accept.
+
+Each `platform_blueprint.md` is complete enough that an AI given only that
+file could stand up a working equivalent. See
+[`reference/README.md`](reference/README.md) for a guided tour.
 
 ## Contributing
 

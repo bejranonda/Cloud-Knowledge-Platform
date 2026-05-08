@@ -2,9 +2,17 @@
 
 You edit notes in Obsidian. They sync to the cloud automatically. That's it.
 
-The platform stores your vault, versions every change in Git, and runs an AI
-pipeline (Hermes) that turns raw notes you drop in `inbox/` into structured
-knowledge in `knowledge/`.
+The platform follows the **DIKW-T pyramid** — every file lives in one of four
+stages and every change is versioned in Git:
+
+| Stage | Folder | You write here? |
+|---|---|---|
+| **Data** — raw capture | `inbox/` | ✅ quick dumps |
+| **Information** — tagged + linked notes | `notes/` | ✅ your main workspace |
+| **Knowledge** — Hermes-synthesised | `knowledge/` | ❌ AI writes it |
+| **Wisdom + Time** — why-it-changed reasoning | `wisdom/` | ❌ AI writes it |
+
+See [dikw-t.md](dikw-t.md) for the full model.
 
 ---
 
@@ -47,12 +55,13 @@ The short version:
 
 ### Where to put things
 
-| Folder | Purpose |
-|---|---|
-| `notes/` | Your authored notes — write here by default. |
-| `inbox/` | Quick captures. Hermes converts them into `knowledge/` automatically. |
-| `knowledge/` | Hermes output — read-only from your perspective. |
-| `attachments/` | Images and files — Obsidian manages this folder for you. |
+| Folder | DIKW-T stage | Purpose |
+|---|---|---|
+| `inbox/` | Data | Quick captures. Hermes promotes these into `knowledge/` automatically. |
+| `notes/` | Information | Your authored notes — structured with tags and `[[wikilinks]]`. |
+| `knowledge/` | Knowledge | Hermes output — read-only from your perspective. |
+| `wisdom/` | Wisdom + Time | Agent-authored "why it changed" notes citing Git history. |
+| `attachments/` | — | Images and files — Obsidian manages this folder for you. |
 
 Drop a quick thought:
 
@@ -127,3 +136,4 @@ a manual sync, or wait for the next scheduled interval.
 - [docs/quickstart-admin.md](quickstart-admin.md) — server administration
 - [docs/setup-client.md](setup-client.md) — full plugin installation walkthrough
 - [docs/knowledge.md](knowledge.md) — vault layout, Hermes pipeline, attachments
+- [docs/dikw-t.md](dikw-t.md) — the DIKW-T framework (Data, Information, Knowledge, Wisdom + Time)

@@ -13,12 +13,14 @@ from .config import settings
 from .routes import (
     attachments_routes,
     credentials_routes,
+    dikw_routes,
     hermes_routes,
     history_routes,
     notes_routes,
     obsidian_routes,
     projects_routes,
     search_routes,
+    stages_routes,
     sync_routes,
 )
 
@@ -61,6 +63,8 @@ for r in (
     sync_routes.router,
     attachments_routes.router,
     credentials_routes.router,
+    dikw_routes.router,
+    stages_routes.router,
 ):
     app.include_router(r)
 

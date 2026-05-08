@@ -1,5 +1,12 @@
 # System Architecture
 
+The conceptual model is the **DIKW-T pyramid** — Data, Information, Knowledge,
+Wisdom + Time. Each stage is a vault folder (`inbox/`, `notes/`,
+`knowledge/`, `wisdom/`) and the per-project Git repo provides the time-series
+backbone. See [dikw-t.md](dikw-t.md) for the framework, folder conventions,
+and the `/api/projects/{slug}/dikw` endpoint. This document covers the
+runtime components that move files between those stages.
+
 ## 1. High-level diagram
 
 ```

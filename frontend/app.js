@@ -77,6 +77,7 @@ function setView(name) {
     hermes: loadHermes,
     projects: loadProjects,
     editor: loadTree,
+    dikw: loadDikw,
   }[name])?.();
 }
 $$("nav.views button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
@@ -139,7 +140,9 @@ function renderNode(node, prefix) {
     const path = prefix ? `${prefix}/${k}` : k;
     if (v.__file) {
       const active = state.currentPath === v.__file.path ? " active" : "";
-      return `<div class="file${active}" data-path="${esc(v.__file.path)}">${esc(k)}</div>`;
+      const stage = v.__file.stage;
+      const pill = stage ? ` <span class="stage stage-${stage}" title="DIKW-T: ${stage}">${stage[0].toUpperCase()}</span>` : "";
+      return `<div class="file${active}" data-path="${esc(v.__file.path)}">${esc(k)}${pill}</div>`;
     }
     return `<details open><summary>${esc(k)}</summary>${renderNode(v.__children, path)}</details>`;
   }).join("");
@@ -161,6 +164,7 @@ async function openNote(path) {
   loadFileHistory();
   renderNoteTags();
   $$("#tree .file").forEach((el) => el.classList.toggle("active", el.dataset.path === path));
+  $("#promote-note").hidden = !path.startsWith("inbox/");
 }
 
 $("#note-editor").addEventListener("input", (e) => {
@@ -184,6 +188,21 @@ $("#save-note").addEventListener("click", async () => {
   await loadTree();
   loadBacklinks();
   loadFileHistory();
+});
+
+$("#promote-note").addEventListener("click", async () => {
+  if (!state.currentPath || !state.currentPath.startsWith("inbox/")) return;
+  const tagsRaw = prompt("Tags for the promoted note (comma-separated, optional):", "");
+  if (tagsRaw === null) return;  // user cancelled
+  const tags = tagsRaw.split(",").map((t) => t.trim()).filter(Boolean);
+  const body = { path: state.currentPath };
+  if (tags.length) body.tags = tags;
+  const res = await api(`/projects/${state.project}/promote`, {
+    method: "POST", body: JSON.stringify(body),
+  });
+  toast(`Promoted → ${res.to}`);
+  await loadTree();
+  await openNote(res.to);
 });
 
 $("#delete-note").addEventListener("click", async () => {
@@ -599,6 +618,63 @@ function startSSE() {
     if (_sse === es) _sse = null;
     if (!_sseRetry) _sseRetry = setTimeout(startSSE, 3000);
   };
+}
+
+// ---------- wisdom synthesis button ----------
+$("#wisdom-synth-btn")?.addEventListener("click", async () => {
+  if (!state.project) return;
+  const btn = $("#wisdom-synth-btn");
+  btn.disabled = true;
+  $("#wisdom-synth-result").textContent = "Synthesising…";
+  try {
+    const res = await api(`/projects/${state.project}/wisdom/synthesise`, { method: "POST" });
+    const produced = res.produced?.length || 0;
+    const skipped = res.skipped?.length || 0;
+    $("#wisdom-synth-result").textContent =
+      `Produced ${produced} wisdom note(s); skipped ${skipped} (need ≥ 2 commits).`;
+    await loadDikw();
+    await loadTree();
+  } catch (_) {
+    $("#wisdom-synth-result").textContent = "Failed — check auth token.";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- DIKW-T dashboard ----------
+async function loadDikw() {
+  if (!state.project) return;
+  const cards = $("#dikw-cards");
+  const time = $("#dikw-time");
+  cards.innerHTML = `<div class="muted">Loading…</div>`;
+  time.textContent = "";
+  let d;
+  try {
+    d = await api(`/projects/${state.project}/dikw`);
+  } catch {
+    return;
+  }
+  const stages = [
+    { key: "data",        label: "Data",        folder: "inbox/",     hint: "Raw capture" },
+    { key: "information", label: "Information", folder: "notes/",     hint: "Tagged + linked" },
+    { key: "knowledge",   label: "Knowledge",   folder: "knowledge/", hint: "Hermes output" },
+    { key: "wisdom",      label: "Wisdom + T",  folder: "wisdom/",    hint: "Why it changed" },
+  ];
+  const total = d.total || 0;
+  cards.innerHTML = stages.map((s) => {
+    const n = d.counts?.[s.key] ?? 0;
+    const pct = total ? Math.round((n / total) * 100) : 0;
+    return `
+      <div class="dikw-card stage-${s.key}">
+        <div class="dikw-label">${s.label}</div>
+        <div class="dikw-count">${n}</div>
+        <div class="dikw-meta"><code>${s.folder}</code> · ${pct}%</div>
+        <div class="dikw-hint">${s.hint}</div>
+      </div>`;
+  }).join("");
+  const first = d.first_commit_ts ? new Date(d.first_commit_ts * 1000).toISOString().slice(0, 10) : "—";
+  const last = d.last_commit_ts ? new Date(d.last_commit_ts * 1000).toISOString().slice(0, 10) : "—";
+  time.innerHTML = `<strong>Time axis</strong> — ${d.commits} commits, from ${first} to ${last}.`;
 }
 
 // ---------- boot ----------

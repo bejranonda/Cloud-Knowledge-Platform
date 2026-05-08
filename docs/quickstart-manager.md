@@ -30,7 +30,7 @@ Dashboard → **Projects** tab → fill in:
 Click **Create**. The backend provisions:
 
 - A CouchDB database for LiveSync replication.
-- A vault directory (`vaults/<slug>/`) with `inbox/`, `knowledge/`, `notes/`.
+- A vault directory (`vaults/<slug>/`) with the four DIKW-T stage folders: `inbox/` (Data), `notes/` (Information), `knowledge/` (Knowledge), `wisdom/` (Wisdom + Time). See [dikw-t.md](dikw-t.md).
 - A Git repository for full history.
 - A Hermes working directory for AI jobs.
 
@@ -133,4 +133,5 @@ history clean and atomic.
 - [docs/quickstart-admin.md](quickstart-admin.md) — server administration
 - [docs/setup-client.md](setup-client.md) — plugin installation for teammates
 - [docs/knowledge.md](knowledge.md) — vault layout, credentials, per-project isolation
-- [docs/hermes-contract.md](hermes-contract.md) — how Hermes converts Info → Knowledge
+- [docs/hermes-contract.md](hermes-contract.md) — how Hermes promotes Data / Information → Knowledge (and later, Wisdom)
+- [docs/dikw-t.md](dikw-t.md) — the DIKW-T framework the whole platform is built on

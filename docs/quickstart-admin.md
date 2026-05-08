@@ -228,3 +228,4 @@ backup schedule is running before you need this.
 - [docs/knowledge.md](knowledge.md) — vault layout, credentials, SSE, WebDAV
 - [docs/hermes-contract.md](hermes-contract.md) — Hermes invocation contract and config
 - [docs/guidelines.md](guidelines.md) — engineering and operating conventions
+- [docs/dikw-t.md](dikw-t.md) — DIKW-T framework (the mental model underlying every folder and endpoint)

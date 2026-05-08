@@ -1,125 +1,174 @@
-"""Full-text search over a project vault.
+"""Full-text search over a project vault, backed by SQLite FTS5.
 
-Lightweight in-memory inverted index with incremental updates driven by the
-watcher. Scoring: term-frequency + title boost. Good enough for vaults up to
-~100k notes; swap for a real engine when that stops being true.
+One SQLite DB per project at `<vault>/.ckp/search.db`. The `.ckp/` prefix
+is ignored by the watcher (it's under a dotfile parent) and by Obsidian /
+LiveSync (same reason), so the index stays local and never replicates.
+
+Public API is unchanged from the previous in-memory implementation:
+`reindex(vault_dir)`, `update_file(vault_dir, abs_path)`,
+`query(vault_dir, q, limit)`, `snippet(vault_dir, rel, q, around)`.
+
+Scoring: FTS5 `bm25()` with a title-column multiplier so title hits outrank
+body hits, matching the old TF+title-boost behaviour.
 """
 from __future__ import annotations
 
+import logging
 import re
+import sqlite3
 import threading
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 
-_TOKEN = re.compile(r"[a-z0-9][a-z0-9_\-]{1,}")
+log = logging.getLogger(__name__)
+
+_SCHEMA = """
+CREATE VIRTUAL TABLE IF NOT EXISTS fts USING fts5(
+    path UNINDEXED,
+    title,
+    body,
+    tokenize = 'unicode61 remove_diacritics 2'
+);
+"""
+
+# Per-vault write locks. FTS5 writes are serialised per DB; reads can overlap
+# in WAL mode.
+_locks: dict[str, threading.Lock] = {}
+_locks_lock = threading.Lock()
+
+_FTS_SPECIAL = re.compile(r'[^A-Za-z0-9_\- ]+')
 
 
-def _tokenise(text: str) -> list[str]:
-    return _TOKEN.findall(text.lower())
+def _db_path(vault_dir: Path) -> Path:
+    return vault_dir / ".ckp" / "search.db"
 
 
-@dataclass
-class _Index:
-    postings: dict[str, dict[str, int]] = field(default_factory=lambda: defaultdict(dict))
-    titles: dict[str, list[str]] = field(default_factory=dict)
-    lock: threading.Lock = field(default_factory=threading.Lock)
+def _lock_for(vault_dir: Path) -> threading.Lock:
+    key = str(vault_dir)
+    with _locks_lock:
+        lock = _locks.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _locks[key] = lock
+        return lock
 
 
-_indexes: dict[str, _Index] = {}
-_global_lock = threading.Lock()
-
-
-def _idx_for(vault_dir: Path) -> _Index:
-    with _global_lock:
-        return _indexes.setdefault(str(vault_dir), _Index())
+def _connect(vault_dir: Path) -> sqlite3.Connection:
+    path = _db_path(vault_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path, timeout=5.0, isolation_level=None)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.executescript(_SCHEMA)
+    return conn
 
 
 def reindex(vault_dir: Path) -> None:
-    idx = _Index()
-    for md in vault_dir.rglob("*.md"):
-        rel = md.relative_to(vault_dir)
-        if any(part.startswith(".") for part in rel.parts):
-            continue
+    """Rebuild the index from scratch by walking the vault."""
+    lock = _lock_for(vault_dir)
+    with lock:
+        conn = _connect(vault_dir)
         try:
-            _insert(idx, vault_dir, md)
-        except OSError:
-            continue
-    with _global_lock:
-        _indexes[str(vault_dir)] = idx
+            conn.execute("BEGIN;")
+            conn.execute("DELETE FROM fts;")
+            for md in vault_dir.rglob("*.md"):
+                rel = md.relative_to(vault_dir)
+                if any(part.startswith(".") for part in rel.parts):
+                    continue
+                try:
+                    body = md.read_text(errors="ignore")
+                except OSError:
+                    continue
+                conn.execute(
+                    "INSERT INTO fts(path, title, body) VALUES (?, ?, ?);",
+                    (rel.as_posix(), md.stem, body),
+                )
+            conn.execute("COMMIT;")
+        finally:
+            conn.close()
 
 
 def update_file(vault_dir: Path, abs_path: Path) -> None:
-    idx = _idx_for(vault_dir)
+    """Upsert a single file's entry. Removes the row if the file is gone."""
     try:
         rel = abs_path.relative_to(vault_dir).as_posix()
     except ValueError:
         return
-    # Read the file BEFORE taking the lock so concurrent `query()` calls
-    # aren't blocked on disk I/O.
-    text: str | None = None
-    stem_tokens: list[str] = []
-    if abs_path.is_file():
+    if any(part.startswith(".") for part in Path(rel).parts):
+        return
+
+    body: str | None = None
+    title = ""
+    if abs_path.is_file() and abs_path.suffix == ".md":
         try:
-            text = abs_path.read_text(errors="ignore")
-            stem_tokens = _tokenise(abs_path.stem)
+            body = abs_path.read_text(errors="ignore")
+            title = abs_path.stem
         except OSError:
-            text = None
-    with idx.lock:
-        _remove(idx, rel)
-        if text is not None:
-            counts = Counter(_tokenise(text))
-            for term, n in counts.items():
-                idx.postings[term][rel] = n
-            idx.titles[rel] = stem_tokens
+            body = None
 
-
-def _remove(idx: _Index, rel: str) -> None:
-    for term in list(idx.postings):
-        if rel in idx.postings[term]:
-            del idx.postings[term][rel]
-            if not idx.postings[term]:
-                del idx.postings[term]
-    idx.titles.pop(rel, None)
-
-
-def _insert(idx: _Index, vault_dir: Path, abs_path: Path) -> None:
-    rel = abs_path.relative_to(vault_dir).as_posix()
-    text = abs_path.read_text(errors="ignore")
-    tokens = _tokenise(text)
-    counts = Counter(tokens)
-    for term, n in counts.items():
-        idx.postings[term][rel] = n
-    idx.titles[rel] = _tokenise(abs_path.stem)
+    lock = _lock_for(vault_dir)
+    with lock:
+        conn = _connect(vault_dir)
+        try:
+            conn.execute("DELETE FROM fts WHERE path = ?;", (rel,))
+            if body is not None:
+                conn.execute(
+                    "INSERT INTO fts(path, title, body) VALUES (?, ?, ?);",
+                    (rel, title, body),
+                )
+        finally:
+            conn.close()
 
 
 def query(vault_dir: Path, q: str, limit: int = 20) -> list[dict]:
-    idx = _idx_for(vault_dir)
-    terms = _tokenise(q)
-    if not terms:
+    """Return [{'path', 'score'}, …] ranked by bm25 (title-weighted)."""
+    match = _to_match(q)
+    if not match:
         return []
-    with idx.lock:
-        scores: dict[str, float] = defaultdict(float)
-        for term in terms:
-            postings = idx.postings.get(term, {})
-            for doc, tf in postings.items():
-                scores[doc] += tf
-                if term in idx.titles.get(doc, []):
-                    scores[doc] += 5.0
-        if not scores:
-            return []
-        top = sorted(scores.items(), key=lambda x: -x[1])[:limit]
-        return [{"path": p, "score": round(s, 2)} for p, s in top]
+    conn = _connect(vault_dir)
+    try:
+        # bm25 with column weights (path=0 ignored, title=5.0, body=1.0).
+        # Lower bm25() score is better → negate for a "higher is better"
+        # score so the JSON output matches the old contract.
+        rows = conn.execute(
+            "SELECT path, -bm25(fts, 0.0, 5.0, 1.0) AS score "
+            "FROM fts WHERE fts MATCH ? "
+            "ORDER BY score DESC LIMIT ?;",
+            (match, int(limit)),
+        ).fetchall()
+    except sqlite3.OperationalError as e:
+        log.warning("search query failed: %s (q=%r)", e, q)
+        return []
+    finally:
+        conn.close()
+    return [{"path": p, "score": round(s, 2)} for p, s in rows]
+
+
+def _to_match(q: str) -> str:
+    """Turn a user query into an FTS5 MATCH expression.
+
+    FTS5 is picky: bare hyphens, colons, and punctuation blow up the parser.
+    Strip them, split on whitespace, and prefix-match each token so typing
+    'react' finds 'react-router'. Empty → empty.
+    """
+    cleaned = _FTS_SPECIAL.sub(" ", q or "").strip()
+    if not cleaned:
+        return ""
+    tokens = [t for t in cleaned.split() if t]
+    if not tokens:
+        return ""
+    return " ".join(f'"{t}"*' for t in tokens)
 
 
 def snippet(vault_dir: Path, rel: str, q: str, around: int = 60) -> str:
-    """First match context for the query."""
+    """First-match context for the query."""
     try:
         text = (vault_dir / rel).read_text(errors="ignore")
     except OSError:
         return ""
     lower = text.lower()
-    for term in _tokenise(q):
+    for term in _FTS_SPECIAL.sub(" ", (q or "").lower()).split():
+        if not term:
+            continue
         i = lower.find(term)
         if i >= 0:
             a = max(0, i - around)
