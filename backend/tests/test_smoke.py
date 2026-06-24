@@ -565,3 +565,38 @@ def test_safe_path_blocks_sibling_vault_traversal(client):
     r = client.get("/api/projects/proj-a-priv/note", params={"path": "notes/secret.md"})
     assert r.status_code == 200
     assert r.text == "TOP SECRET"
+
+
+# ---------------------------------------------------------------------------
+# 16. LiveSync materialisation refuses to write into .git/.ckp or escape
+# ---------------------------------------------------------------------------
+
+def test_sync_materialise_rejects_protected_and_escaping_paths(client):
+    """`sync_monitor._materialise` is the LiveSync → disk path. A malicious or
+    buggy CouchDB doc must not be able to scribble into the Git repo, the
+    search index, or outside the vault.
+    """
+    from app import projects, sync_monitor
+    from app.config import settings
+
+    proj = projects.get("proj-a")
+    assert proj is not None
+    vault = proj.vault_dir
+
+    # Legit doc lands as a normal note.
+    sync_monitor._materialise(proj, {"path": "notes/from-sync.md", "data": "synced body"})
+    assert (vault / "notes" / "from-sync.md").read_text() == "synced body"
+
+    # .git/config must NOT be overwritten.
+    git_config_before = (vault / ".git" / "config").read_text()
+    sync_monitor._materialise(proj, {"path": ".git/config", "data": "[evil]\n"})
+    assert (vault / ".git" / "config").read_text() == git_config_before
+    assert "[evil]" not in (vault / ".git" / "config").read_text()
+
+    # .ckp/ (search index dir) must reject new writes.
+    sync_monitor._materialise(proj, {"path": ".ckp/injected.md", "data": "corrupt"})
+    assert not (vault / ".ckp" / "injected.md").exists()
+
+    # Traversal outside the vault must write nothing.
+    sync_monitor._materialise(proj, {"path": "../sync-escape.md", "data": "x"})
+    assert not (settings.vaults_root / "sync-escape.md").exists()
