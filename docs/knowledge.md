@@ -99,12 +99,36 @@ Previous scripts (`install.sh`, `start.sh`, `deploy-server.sh`, `backup.sh`)
 were consolidated into this single dispatcher so operators only ever learn
 one command surface.
 
+## v0.5.1 fixes & behaviour
+
+**Cross-vault path traversal fix.** Prior to v0.5.1, `util.safe_path()` confined
+API file operations to a vault using a *string-prefix* check
+(`str(resolved).startswith(str(vault))`). Because slugs may share a name prefix
+(`proj-a` vs `proj-a-secret`), a project-scoped token for `proj-a` could escape
+into a sibling vault via a `../proj-a-secret/...` path — the resolved path still
+started with `…/vaults/proj-a`. The fix switches to a real containment check
+(`Path.is_relative_to`) and matches `.git` against the *resolved* path, mirroring
+the already-correct WebDAV `_safe_path`. A regression test seeds a secret in a
+prefix-sibling project and asserts both write (project token) and public-read
+traversal attempts return `400`.
+
+**Version single-sourced.** `/api/health` and the FastAPI app object both read
+`backend/app/__init__.py:__version__` instead of a hardcoded literal, so the
+reported version can no longer drift. Bumped to `0.5.1`.
+
+**CI now enforces conventions.** `.github/workflows/ci.yml` runs `ruff check`
+(blocking, no more `|| true`) and `mypy --strict backend/app` as gates, matching
+the bar declared in `docs/guidelines.md`. The backend is fully strict-clean.
+
 ## Per-project credentials
 
 - `CKP_ADMIN_TOKEN` (env) is the bootstrap token. It can do anything.
 - Admins issue **per-project tokens** via `POST /api/projects/{slug}/credentials`. Each token grants write access to one project (API + WebDAV). Tokens are persisted in `vaults/.credentials.json`.
 - WebDAV clients use HTTP Basic with the project token as the password (username is ignored).
 - Revoke via `DELETE /api/projects/{slug}/credentials?prefix=<first-6>`.
+- **Isolation is enforced at the path layer too**: `util.safe_path()` rejects any
+  request path that resolves outside the project's own vault, so a project token
+  cannot reach another project's files even via `../` (see v0.5.1 fixes above).
 
 ## Attachments
 

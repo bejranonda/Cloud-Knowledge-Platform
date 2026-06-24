@@ -45,7 +45,7 @@ The orchestrator always **reads the result critically**, wires it up, and keeps 
 
 ## Method: continuous validation
 
-After any non-trivial change we run a **zero-error loop**: `pytest backend/tests -q` → fix any failure → repeat until green twice in a row. Docs get grepped for stale language (`grep -r "Info →" docs/` etc.) so the DIKW-T vocabulary stays consistent. The loop terminates only when tests pass, lints are clean, and no doc still references retired terminology.
+After any non-trivial change we run a **zero-error loop**: `ruff check backend` → `mypy --strict backend/app` → `pytest backend/tests -q` → fix any failure → repeat until green twice in a row. These are the same three gates CI enforces (as of v0.5.1 lint and type-check are blocking, not advisory). Docs get grepped for stale language (`grep -r "Info →" docs/` etc.) so the DIKW-T vocabulary stays consistent. The loop terminates only when tests pass, lints and types are clean, and no doc still references retired terminology.
 
 ## Recent lessons
 
@@ -72,6 +72,21 @@ server must be mounted at `/`. Mounting at `/ui/` means requests for `/app.js` h
 the API router, not the file server. The lesson: check the mount path against the
 HTML asset references before shipping; mismatched paths produce silent 404s that
 are hard to diagnose in production.
+
+**Containment is a predicate, not a string compare.** The v0.5.1 cross-vault
+traversal bug came from confining a path with `str(resolved).startswith(str(vault))`.
+Because per-project isolation is *physical* (principle 3) and slugs may share a
+prefix (`proj-a` / `proj-a-secret`), the prefix test treated a sibling vault as
+"inside" and let a project token escape via `../`. The lesson: filesystem
+containment must be an honest predicate — `Path.is_relative_to(vault)` — and the
+sensitive parts (`.git`) must be matched against the *resolved* path, never the
+raw input. A string prefix is not a boundary.
+
+**A convention that CI doesn't run is a wish, not a rule.** `ruff` + `mypy --strict`
+were declared mandatory in the guidelines but CI ran ruff with `|| true` and never
+invoked mypy — so 65 strict violations and a real lint debt accumulated unseen. The
+lesson: every quality bar we write down gets a *blocking* CI step in the same change,
+or it isn't a bar.
 
 ## Method: learning from external systems
 
