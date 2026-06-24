@@ -50,16 +50,37 @@ def _record(device: str, project: str, doc_id: str) -> None:
         )
 
 
+# Top-level dirs a sync client must never be able to write into: the Git
+# repo (would corrupt history / `.git/config`) and our local search index.
+_PROTECTED_PARTS = frozenset({".git", ".ckp"})
+
+
+def _safe_target(vault_dir: Path, path: str) -> Path | None:
+    """Resolve a LiveSync doc path inside *vault_dir*, or None if it escapes.
+
+    Mirrors util.safe_path: real containment via is_relative_to (a sibling
+    vault can share a name prefix, so a string check is not a boundary) plus
+    a hard reject of `.git` / `.ckp`.
+    """
+    vault = vault_dir.resolve()
+    target = (vault / path.lstrip("/")).resolve()
+    if target != vault and not target.is_relative_to(vault):
+        log.warning("sync_monitor: rejected out-of-vault path %r", path)
+        return None
+    if _PROTECTED_PARTS & set(target.parts):
+        log.warning("sync_monitor: rejected protected path %r", path)
+        return None
+    return target
+
+
 def _materialise(project: projects.Project, doc: dict[str, Any]) -> None:
     """Best-effort: LiveSync stores note path in `path` and body in `data`/`children`."""
     path = doc.get("path") or doc.get("_id")
     if not path or not isinstance(path, str):
         return
-    # Guard against path traversal
-    rel = Path(path.lstrip("/"))
-    if ".." in rel.parts:
+    target = _safe_target(project.vault_dir, path)
+    if target is None:
         return
-    target = project.vault_dir / rel
     if doc.get("deleted"):
         if target.exists():
             target.unlink(missing_ok=True)

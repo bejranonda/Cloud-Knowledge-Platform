@@ -99,6 +99,17 @@ Previous scripts (`install.sh`, `start.sh`, `deploy-server.sh`, `backup.sh`)
 were consolidated into this single dispatcher so operators only ever learn
 one command surface.
 
+## v0.5.2 fixes & behaviour
+
+**LiveSync materialisation is containment-checked.** The CouchDB `_changes`
+listener writes docs to disk via `sync_monitor._materialise`. It previously only
+rejected paths containing `..`, so a doc with `path: ".git/config"` or
+`".ckp/search.db"` would be written straight into the Git repo or the search
+index. A new `_safe_target()` helper resolves the path and verifies
+`Path.is_relative_to(vault)`, then hard-rejects any path whose parts include
+`.git` or `.ckp` — the same boundary `util.safe_path` enforces for the API. This
+closes the last write path that did not use a real containment check.
+
 ## v0.5.1 fixes & behaviour
 
 **Cross-vault path traversal fix.** Prior to v0.5.1, `util.safe_path()` confined
