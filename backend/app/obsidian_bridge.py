@@ -31,12 +31,13 @@ def _obsidian_dir(slug: str) -> Path:
     return proj.vault_dir / ".obsidian"
 
 
-def _read_json(path: Path) -> dict | list | None:
+def _read_json(path: Path) -> dict[str, Any] | list[Any] | None:
     """Parse *path* as JSON; return None and log a warning on any error."""
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        data: dict[str, Any] | list[Any] = json.loads(path.read_text(encoding="utf-8"))
+        return data
     except (json.JSONDecodeError, OSError) as exc:
         _log.warning("obsidian_bridge: could not read %s — %s", path, exc)
         return None
@@ -52,7 +53,7 @@ def _safe_path(base: Path, name: str) -> Path | None:
         return None
 
 
-def _as_list(value: Any, *, of_type: type = str) -> list:
+def _as_list(value: Any, *, of_type: type = str) -> list[Any]:
     """Coerce *value* to a list, filtering items to *of_type*."""
     if not isinstance(value, list):
         return []
@@ -63,11 +64,11 @@ def _as_list(value: Any, *, of_type: type = str) -> list:
 # Starred / bookmarks normalisation
 # ---------------------------------------------------------------------------
 
-def _parse_starred(data: dict | list | None) -> list[dict]:
+def _parse_starred(data: dict[str, Any] | list[Any] | None) -> list[dict[str, Any]]:
     """Normalise starred.json (older format) into the unified item schema."""
     if not isinstance(data, dict):
         return []
-    items: list[dict] = []
+    items: list[dict[str, Any]] = []
     for raw in _as_list(data.get("starred"), of_type=dict):
         item_type = raw.get("type", "file")
         title = raw.get("title") or raw.get("path") or ""
@@ -76,13 +77,13 @@ def _parse_starred(data: dict | list | None) -> list[dict]:
     return items
 
 
-def _parse_bookmarks(data: dict | list | None) -> list[dict]:
+def _parse_bookmarks(data: dict[str, Any] | list[Any] | None) -> list[dict[str, Any]]:
     """Normalise bookmarks.json (newer nested format) into the unified schema."""
     if not isinstance(data, dict):
         return []
 
-    def _walk(nodes: list) -> list[dict]:
-        out: list[dict] = []
+    def _walk(nodes: list[Any]) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
         for node in _as_list(nodes, of_type=dict):
             node_type = node.get("type", "file")
             if node_type == "group":
@@ -112,7 +113,7 @@ def _extract_leaves(node: Any, out: list[str]) -> None:
         _extract_leaves(child, out)
 
 
-def _workspace_files(ws: dict | list | None) -> tuple[str | None, list[str], list[str]]:
+def _workspace_files(ws: dict[str, Any] | list[Any] | None) -> tuple[str | None, list[str], list[str]]:
     """Return (active_file, open_files, recent_files) from workspace.json."""
     if not isinstance(ws, dict):
         return None, [], []
@@ -125,8 +126,8 @@ def _workspace_files(ws: dict | list | None) -> tuple[str | None, list[str], lis
     # lastOpenFiles is a flat list Obsidian keeps for quick-open history
     recent_files = _as_list(ws.get("lastOpenFiles"))
 
-    active_leaf_id: str | None = ws.get("active")
     # Obsidian stores active as a leaf id, not a path; first open file is best proxy
+    # (ws.get("active") is intentionally ignored).
     active_file = open_files[0] if open_files else (recent_files[0] if recent_files else None)
 
     return active_file, open_files, recent_files
@@ -136,7 +137,7 @@ def _workspace_files(ws: dict | list | None) -> tuple[str | None, list[str], lis
 # Public API
 # ---------------------------------------------------------------------------
 
-def get_raw(slug: str, name: str) -> dict | None:
+def get_raw(slug: str, name: str) -> dict[str, Any] | None:
     """Return parsed JSON for <vault>/.obsidian/<name>.json, or None.
 
     *name* must be alphanumeric/underscore/hyphen only (no path traversal).
@@ -156,7 +157,7 @@ def get_raw(slug: str, name: str) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def starred(slug: str) -> list[dict]:
+def starred(slug: str) -> list[dict[str, Any]]:
     """Unified starred / bookmarked items across bookmarks.json and starred.json.
 
     Prefers bookmarks.json (newer); falls back to starred.json.
@@ -198,7 +199,7 @@ def recent_files(slug: str, limit: int = 20) -> list[str]:
     return merged
 
 
-def plugins(slug: str) -> dict:
+def plugins(slug: str) -> dict[str, Any]:
     """Return core and community plugin information.
 
     Community plugins are enriched with version/name from per-plugin manifests
@@ -212,7 +213,7 @@ def plugins(slug: str) -> dict:
     core = _as_list(_read_json(obs_dir / "core-plugins.json"))
 
     enabled_ids: list[str] = _as_list(_read_json(obs_dir / "community-plugins.json"))
-    community: list[dict] = []
+    community: list[dict[str, Any]] = []
     plugins_dir = obs_dir / "plugins"
 
     for plugin_id in enabled_ids:
@@ -229,7 +230,7 @@ def plugins(slug: str) -> dict:
     return {"core": core, "community": community}
 
 
-def summary(slug: str) -> dict:
+def summary(slug: str) -> dict[str, Any]:
     """Compact snapshot of the Obsidian vault metadata.
 
     Raises KeyError when *slug* is unknown.

@@ -20,7 +20,6 @@ import json
 import os
 import secrets
 import threading
-from pathlib import Path
 
 from fastapi import Header, HTTPException, Request, status
 
@@ -39,7 +38,8 @@ def _load() -> dict[str, list[str]]:
     if not _CRED_FILE.exists():
         return {}
     try:
-        return json.loads(_CRED_FILE.read_text())
+        data: dict[str, list[str]] = json.loads(_CRED_FILE.read_text())
+        return data
     except (OSError, json.JSONDecodeError):
         return {}
 

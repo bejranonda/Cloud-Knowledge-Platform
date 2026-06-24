@@ -12,8 +12,6 @@ import base64
 import time
 from io import BytesIO
 
-import pytest
-
 # ---------------------------------------------------------------------------
 # Auth header shorthand
 # ---------------------------------------------------------------------------
@@ -518,3 +516,52 @@ def test_wisdom_synthesise(client):
     assert r.status_code == 200
     assert r.text.startswith("# Wisdom: evolving")
     assert "Evolution" in r.text
+
+
+# ---------------------------------------------------------------------------
+# 15. safe_path rejects traversal into a sibling vault (prefix-match bug)
+# ---------------------------------------------------------------------------
+
+def test_safe_path_blocks_sibling_vault_traversal(client):
+    """A project-scoped token must not reach a sibling project whose slug
+    shares a name prefix. The old string-prefix containment check let
+    `../proj-a-priv/...` from `proj-a` pass because the resolved path still
+    started with `…/vaults/proj-a`.
+    """
+    # Sibling project whose slug shares the `proj-a` prefix.
+    r = client.post(
+        "/api/projects",
+        json={"slug": "proj-a-priv", "display_name": "Private"},
+        headers=H,
+    )
+    assert r.status_code == 200
+
+    # Seed a secret in the sibling (as admin).
+    r = client.put(
+        "/api/projects/proj-a-priv/note",
+        json={"path": "notes/secret.md", "content": "TOP SECRET"},
+        headers=H,
+    )
+    assert r.status_code == 200
+
+    # A token scoped to proj-a only.
+    token = client.post("/api/projects/proj-a/credentials", headers=H).json()["token"]
+    th = {"Authorization": f"Bearer {token}"}
+    traversal = "../proj-a-priv/notes/secret.md"
+
+    # Write via the proj-a token must be rejected, not cross into the sibling.
+    r = client.put(
+        "/api/projects/proj-a/note",
+        json={"path": traversal, "content": "pwned"},
+        headers=th,
+    )
+    assert r.status_code == 400
+
+    # The public read endpoint must reject traversal too.
+    r = client.get("/api/projects/proj-a/note", params={"path": traversal})
+    assert r.status_code == 400
+
+    # The secret is untouched.
+    r = client.get("/api/projects/proj-a-priv/note", params={"path": "notes/secret.md"})
+    assert r.status_code == 200
+    assert r.text == "TOP SECRET"

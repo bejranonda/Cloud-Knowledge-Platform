@@ -1,6 +1,8 @@
 """/api/projects/{slug}/obsidian/* — bridge to <vault>/.obsidian metadata."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from .. import obsidian_bridge
@@ -10,19 +12,19 @@ router = APIRouter(prefix="/api/projects", tags=["obsidian"])
 
 
 @router.get("/{slug}/obsidian/summary")
-def summary(slug: str) -> dict:
+def summary(slug: str) -> dict[str, Any]:
     proj_or_404(slug)
     return obsidian_bridge.summary(slug)
 
 
 @router.get("/{slug}/obsidian/starred")
-def starred(slug: str) -> list[dict]:
+def starred(slug: str) -> list[dict[str, Any]]:
     proj_or_404(slug)
     return obsidian_bridge.starred(slug)
 
 
 @router.get("/{slug}/obsidian/plugins")
-def plugins(slug: str) -> dict:
+def plugins(slug: str) -> dict[str, Any]:
     proj_or_404(slug)
     return obsidian_bridge.plugins(slug)
 

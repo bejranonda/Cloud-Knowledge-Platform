@@ -1,6 +1,8 @@
 """/api/hermes/* and /api/projects/{slug}/hermes/*."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from .. import auth, hermes
@@ -10,7 +12,7 @@ router = APIRouter(prefix="/api", tags=["hermes"])
 
 
 @router.get("/hermes/jobs")
-def hermes_jobs(limit: int = 50) -> list[dict]:
+def hermes_jobs(limit: int = 50) -> list[dict[str, Any]]:
     return [j.__dict__ for j in hermes.recent_jobs(limit=limit)]
 
 
@@ -18,7 +20,7 @@ def hermes_jobs(limit: int = 50) -> list[dict]:
     "/projects/{slug}/hermes/retrigger",
     dependencies=[Depends(auth.require_project)],
 )
-def hermes_retrigger(slug: str, path: str) -> dict:
+def hermes_retrigger(slug: str, path: str) -> dict[str, Any]:
     proj = proj_or_404(slug)
     src = safe_path(proj, path)
     if not src.is_file():

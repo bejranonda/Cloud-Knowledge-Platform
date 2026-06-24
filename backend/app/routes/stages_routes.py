@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -27,7 +28,7 @@ class PromoteBody(BaseModel):
 
 
 @router.post("/{slug}/promote", dependencies=[Depends(auth.require_project)])
-def promote(slug: str, body: PromoteBody) -> dict:
+def promote(slug: str, body: PromoteBody) -> dict[str, Any]:
     proj = proj_or_404(slug)
     src = safe_path(proj, body.path)
     if not src.is_file():
@@ -69,7 +70,7 @@ def promote(slug: str, body: PromoteBody) -> dict:
 
 
 @router.post("/{slug}/wisdom/synthesise", dependencies=[Depends(auth.require_project)])
-def synthesise_wisdom(slug: str) -> dict:
+def synthesise_wisdom(slug: str) -> dict[str, Any]:
     proj = proj_or_404(slug)
     result = wisdom.synthesise_project(proj.vault_dir, slug)
     if result.produced:

@@ -1,6 +1,8 @@
 """/api/sync/status and /api/events (SSE)."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
@@ -10,7 +12,7 @@ router = APIRouter(prefix="/api", tags=["sync"])
 
 
 @router.get("/sync/status")
-def sync_status() -> list[dict]:
+def sync_status() -> list[dict[str, Any]]:
     return [
         {"device": s.device, "project": s.project, "last_seen": s.last_seen, "last_doc": s.last_doc}
         for s in sync_monitor.device_statuses()

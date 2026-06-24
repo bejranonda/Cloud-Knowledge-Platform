@@ -1,6 +1,8 @@
 """/api/projects/{slug}/history/* — commits, diffs, restore."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 
@@ -11,12 +13,12 @@ router = APIRouter(prefix="/api/projects", tags=["history"])
 
 
 @router.get("/{slug}/history")
-def history(slug: str, limit: int = 50) -> list[dict]:
+def history(slug: str, limit: int = 50) -> list[dict[str, Any]]:
     return versioning.history(proj_or_404(slug).vault_dir, limit=limit)
 
 
 @router.get("/{slug}/history/file")
-def file_history(slug: str, path: str, limit: int = 50) -> list[dict]:
+def file_history(slug: str, path: str, limit: int = 50) -> list[dict[str, Any]]:
     return versioning.file_history(proj_or_404(slug).vault_dir, path, limit=limit)
 
 
@@ -34,7 +36,7 @@ def history_diff(slug: str, commit: str, path: str | None = None) -> PlainTextRe
 
 
 @router.post("/{slug}/history/restore", dependencies=[Depends(auth.require_project)])
-def history_restore(slug: str, commit: str, path: str) -> dict:
+def history_restore(slug: str, commit: str, path: str) -> dict[str, Any]:
     proj = proj_or_404(slug)
     ok = versioning.restore(proj.vault_dir, commit, path)
     if not ok:

@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from . import frontmatter
 
@@ -61,7 +61,7 @@ def _has_structure(body: str) -> bool:
     return False
 
 
-def summarise(vault_dir: Path) -> dict:
+def summarise(vault_dir: Path) -> dict[str, Any]:
     """Walk the vault and return counts per stage plus Git time-series stats."""
     counts: dict[Stage, int] = {"data": 0, "information": 0, "knowledge": 0, "wisdom": 0}
     total = 0

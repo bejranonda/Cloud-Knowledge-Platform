@@ -9,6 +9,7 @@ from __future__ import annotations
 import mimetypes
 import re
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
@@ -29,7 +30,7 @@ def _sanitise(name: str) -> str:
 
 
 @router.post("/{slug}/attachments", dependencies=[Depends(auth.require_project)])
-async def upload_attachment(slug: str, file: UploadFile = File(...)) -> dict:
+async def upload_attachment(slug: str, file: UploadFile = File(...)) -> dict[str, Any]:
     proj = proj_or_404(slug)
     att_dir = proj.vault_dir / "attachments"
     att_dir.mkdir(exist_ok=True)

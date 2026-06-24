@@ -17,6 +17,7 @@ import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +57,7 @@ def synthesise_project(vault_dir: Path, project_slug: str) -> WisdomResult:
     )
 
 
-def _git_history(vault_dir: Path, rel_path: str) -> list[dict]:
+def _git_history(vault_dir: Path, rel_path: str) -> list[dict[str, Any]]:
     """Return [{hash, iso, author, msg}, ...], newest first. Empty if no repo."""
     if not (vault_dir / ".git").exists():
         return []
@@ -86,7 +87,7 @@ def _git_history(vault_dir: Path, rel_path: str) -> list[dict]:
     return entries
 
 
-def _synthesise(knowledge_path: str, commits: list[dict]) -> str:
+def _synthesise(knowledge_path: str, commits: list[dict[str, Any]]) -> str:
     """Render a deterministic Wisdom note from a file's commit history.
 
     Stub implementation — no LLM. Lists revisions, highlights change cadence,

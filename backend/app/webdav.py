@@ -16,6 +16,7 @@ import hashlib
 import secrets
 import shutil
 import urllib.parse
+from collections.abc import AsyncIterator
 from email.utils import formatdate
 from pathlib import Path
 from textwrap import dedent
@@ -310,7 +311,7 @@ async def webdav_handler(
         if method == "HEAD":
             return Response(status_code=200, headers=headers)
 
-        async def _iter_file():
+        async def _iter_file() -> AsyncIterator[bytes]:
             with abs_path.open("rb") as fh:
                 while chunk := fh.read(65536):
                     yield chunk

@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from . import projects
 from .config import settings
@@ -49,7 +50,7 @@ def _record(device: str, project: str, doc_id: str) -> None:
         )
 
 
-def _materialise(project: projects.Project, doc: dict) -> None:
+def _materialise(project: projects.Project, doc: dict[str, Any]) -> None:
     """Best-effort: LiveSync stores note path in `path` and body in `data`/`children`."""
     path = doc.get("path") or doc.get("_id")
     if not path or not isinstance(path, str):

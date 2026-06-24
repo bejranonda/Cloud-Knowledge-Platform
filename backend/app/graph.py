@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from typing import Any
 
 _WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]")
 
 
-def build(vault_dir: Path) -> dict:
-    nodes: list[dict] = []
-    edges: list[dict] = []
+def build(vault_dir: Path) -> dict[str, Any]:
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
     node_ids: set[str] = set()
 
     for md in vault_dir.rglob("*.md"):
@@ -45,11 +46,11 @@ def build(vault_dir: Path) -> dict:
     return {"nodes": nodes, "edges": resolved_edges}
 
 
-def backlinks(vault_dir: Path, target_rel: str) -> list[dict]:
+def backlinks(vault_dir: Path, target_rel: str) -> list[dict[str, Any]]:
     """Return notes that reference `target_rel` (path without .md also accepted)."""
     target_id = target_rel[:-3] if target_rel.endswith(".md") else target_rel
     target_name = Path(target_id).name
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     for md in vault_dir.rglob("*.md"):
         rel = md.relative_to(vault_dir)
         if any(part.startswith(".") for part in rel.parts):

@@ -1,6 +1,8 @@
 """/api/projects/{slug}/credentials — issue and revoke per-project tokens."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends
 
 from .. import auth
@@ -10,13 +12,13 @@ router = APIRouter(prefix="/api/projects", tags=["credentials"])
 
 
 @router.get("/{slug}/credentials", dependencies=[Depends(auth.require_admin)])
-def list_credentials(slug: str) -> dict:
+def list_credentials(slug: str) -> dict[str, Any]:
     proj_or_404(slug)
     return {"tokens": auth.list_tokens(slug)}
 
 
 @router.post("/{slug}/credentials", dependencies=[Depends(auth.require_admin)])
-def create_credential(slug: str) -> dict:
+def create_credential(slug: str) -> dict[str, Any]:
     """Return the new token in full — only time it's shown."""
     proj_or_404(slug)
     tok = auth.issue_token(slug)
@@ -24,7 +26,7 @@ def create_credential(slug: str) -> dict:
 
 
 @router.delete("/{slug}/credentials", dependencies=[Depends(auth.require_admin)])
-def delete_credential(slug: str, prefix: str) -> dict:
+def delete_credential(slug: str, prefix: str) -> dict[str, Any]:
     """Revoke the token whose first 6 chars match `prefix`."""
     proj_or_404(slug)
     ok = auth.revoke_token(slug, prefix)
