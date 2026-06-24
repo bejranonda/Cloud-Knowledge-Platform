@@ -1,6 +1,8 @@
 """/api/projects — list and create."""
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -15,14 +17,14 @@ class NewProject(BaseModel):
 
 
 @router.get("/projects")
-def list_projects() -> list[dict]:
+def list_projects() -> list[dict[str, Any]]:
     return [
         {"slug": p.slug, "display_name": p.display_name} for p in projects.list_projects()
     ]
 
 
 @router.post("/projects", dependencies=[Depends(auth.require_admin)])
-def create_project(body: NewProject) -> dict:
+def create_project(body: NewProject) -> dict[str, Any]:
     try:
         proj = projects.create(body.slug, body.display_name)
     except ValueError as e:

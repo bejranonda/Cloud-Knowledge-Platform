@@ -18,6 +18,7 @@ import re
 import sqlite3
 import threading
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ def update_file(vault_dir: Path, abs_path: Path) -> None:
             conn.close()
 
 
-def query(vault_dir: Path, q: str, limit: int = 20) -> list[dict]:
+def query(vault_dir: Path, q: str, limit: int = 20) -> list[dict[str, Any]]:
     """Return [{'path', 'score'}, …] ranked by bm25 (title-weighted)."""
     match = _to_match(q)
     if not match:

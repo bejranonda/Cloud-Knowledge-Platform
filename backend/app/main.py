@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from . import auth, events, sync_monitor, watcher, webdav
+from . import __version__, auth, events, sync_monitor, watcher, webdav
 from .config import settings
 from .routes import (
     attachments_routes,
@@ -32,7 +34,7 @@ log = logging.getLogger("ckp")
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     events.bind_loop(asyncio.get_running_loop())
     watcher.start()
     sync_monitor.start_all()
@@ -44,12 +46,12 @@ async def lifespan(_: FastAPI):
         sync_monitor.stop_all()
 
 
-app = FastAPI(title="Cloud Knowledge Platform", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="Cloud Knowledge Platform", version=__version__, lifespan=lifespan)
 
 
 @app.get("/api/health")
-def health() -> dict:
-    return {"ok": True, "version": "0.3.0", "auth_required": auth.admin_enabled()}
+def health() -> dict[str, Any]:
+    return {"ok": True, "version": __version__, "auth_required": auth.admin_enabled()}
 
 
 # API routers

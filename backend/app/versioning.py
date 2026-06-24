@@ -11,6 +11,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from .config import settings
 
@@ -89,7 +90,7 @@ def _do_commit(vault_dir: Path, reason: str) -> None:
     log.info("committed %s: %s", vault_dir.name, msg)
 
 
-def history(vault_dir: Path, limit: int = 50) -> list[dict]:
+def history(vault_dir: Path, limit: int = 50) -> list[dict[str, Any]]:
     """Return recent commits as [{hash, ts, msg, author}]."""
     if not (vault_dir / ".git").exists():
         return []
@@ -108,7 +109,7 @@ def history(vault_dir: Path, limit: int = 50) -> list[dict]:
     return commits
 
 
-def file_history(vault_dir: Path, rel_path: str, limit: int = 50) -> list[dict]:
+def file_history(vault_dir: Path, rel_path: str, limit: int = 50) -> list[dict[str, Any]]:
     """History restricted to one file."""
     if not (vault_dir / ".git").exists():
         return []

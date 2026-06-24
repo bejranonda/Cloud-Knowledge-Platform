@@ -49,8 +49,9 @@ Running tests:
 ```
 
 ## Conventions
-- Python 3.11+, FastAPI, `ruff`, `mypy --strict`.
+- Python 3.11+, FastAPI, `ruff`, `mypy --strict`. Both are **blocking CI gates** (since v0.5.1) — run `ruff check backend && mypy --strict backend/app` before pushing.
 - One project = one CouchDB DB + one vault dir + one Git repo. Never cross these.
+- The app version lives in one place: `backend/app/__init__.py:__version__`. `main.py` and `/api/health` import it — never hardcode a version literal.
 - Keep modules small and single-purpose; split only when a second consumer appears.
 - Don't add features speculatively. If requirements unclear, ask.
 
@@ -62,6 +63,7 @@ Running tests:
 - **Search behaviour**: `backend/app/search.py` — SQLite FTS5 per project at `<vault>/.ckp/search.db`; bm25 with title column weighted 5×.
 - **Stage promotion endpoint**: `backend/app/routes/stages_routes.py` — `POST /promote` (inbox → notes) and `POST /wisdom/synthesise`.
 - **New project field**: update `backend/app/projects.py` model + the `/projects` view in `frontend/app.js`.
+- **Anything that turns a user path into a vault file**: route it through `util.safe_path` (API) / `webdav._safe_path` (WebDAV). Never hand-roll a containment check.
 
 ## Gotchas
 - Watcher + Git need to serialise writes to avoid racing commits (see `versioning.py` queue).
@@ -69,3 +71,4 @@ Running tests:
 - LiveSync sends many small revisions; debounce matters.
 - The watcher MUST ignore non-mutating inotify events (`opened`, `closed`, `closed_no_write`). Reacting to them caused an infinite feedback loop via `search.update_file` (which reads the file and thus emits another `opened`) that prevented the commit debouncer from ever firing. See `_MUTATING` in `watcher.py`.
 - Static assets (`styles.css`, `app.js`, …) are served from `/`, not `/ui/`. `index.html` uses relative paths; mounting at `/ui` would 404. `StaticFiles(html=True)` is mounted LAST so explicit API routes take precedence.
+- Vault containment must use `Path.is_relative_to`, never a string-prefix compare. Sibling vaults can share a slug prefix (`proj-a` / `proj-a-secret`), so a prefix check lets a project token escape via `../`. This was the v0.5.1 traversal fix (`util.safe_path`); don't reintroduce the prefix pattern.

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import shutil
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import PlainTextResponse
@@ -25,7 +26,7 @@ class NoteMove(BaseModel):
 
 
 @router.get("/{slug}/tree")
-def tree(slug: str) -> list[dict]:
+def tree(slug: str) -> list[dict[str, Any]]:
     proj = proj_or_404(slug)
     out = []
     for p in sorted(proj.vault_dir.rglob("*")):
@@ -57,7 +58,7 @@ def read_note(slug: str, path: str) -> PlainTextResponse:
 
 
 @router.put("/{slug}/note", dependencies=[Depends(auth.require_project)])
-def write_note(slug: str, body: NoteWrite) -> dict:
+def write_note(slug: str, body: NoteWrite) -> dict[str, Any]:
     proj = proj_or_404(slug)
     p = safe_path(proj, body.path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -69,7 +70,7 @@ def write_note(slug: str, body: NoteWrite) -> dict:
 
 
 @router.delete("/{slug}/note", dependencies=[Depends(auth.require_project)])
-def delete_note(slug: str, path: str) -> dict:
+def delete_note(slug: str, path: str) -> dict[str, Any]:
     from fastapi import HTTPException
     proj = proj_or_404(slug)
     p = safe_path(proj, path)
@@ -86,7 +87,7 @@ def delete_note(slug: str, path: str) -> dict:
 
 
 @router.post("/{slug}/note/move", dependencies=[Depends(auth.require_project)])
-def move_note(slug: str, body: NoteMove) -> dict:
+def move_note(slug: str, body: NoteMove) -> dict[str, Any]:
     from fastapi import HTTPException
     proj = proj_or_404(slug)
     src = safe_path(proj, body.from_)

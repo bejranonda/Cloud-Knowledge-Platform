@@ -16,10 +16,17 @@ def proj_or_404(slug: str) -> projects.Project:
 
 
 def safe_path(proj: projects.Project, rel: str) -> Path:
-    """Resolve rel inside the vault; reject traversal or .git writes."""
-    p = (proj.vault_dir / rel).resolve()
-    if not str(p).startswith(str(proj.vault_dir.resolve())):
+    """Resolve rel inside the vault; reject traversal or .git writes.
+
+    Uses a real containment check (``is_relative_to``) rather than a string
+    prefix: a prefix match treats sibling vaults that share a name prefix
+    (e.g. ``proj-a`` vs ``proj-a-secret``) as "inside", letting a
+    project-scoped token escape into another project via ``../``.
+    """
+    vault = proj.vault_dir.resolve()
+    p = (vault / rel).resolve()
+    if p != vault and not p.is_relative_to(vault):
         raise HTTPException(status_code=400, detail="path outside vault")
-    if ".git" in Path(rel).parts:
+    if ".git" in p.parts:
         raise HTTPException(status_code=400, detail="path in .git")
     return p

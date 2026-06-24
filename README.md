@@ -16,7 +16,7 @@ per-project Git repo as the time-series backbone. See
 - **Git-backed time-series history**: per-project repo, debounced commits, per-file history, unified diff view, one-click restore.
 - **Event-driven Hermes pipeline**: watcher fires a worker queue with exponential-backoff retries; re-trigger from the UI.
 - **Admin auth** (bearer token) and **live updates** over SSE.
-- **Multi-project isolation**: separate CouchDB DB, vault dir, Git repo, Hermes workdir per project.
+- **Multi-project isolation**: separate CouchDB DB, vault dir, Git repo, Hermes workdir per project — and every API/WebDAV file path is containment-checked, so a project-scoped token can never reach another project's vault (even via `../`).
 
 ## Repo layout
 
@@ -26,7 +26,7 @@ frontend/     Static dashboard (no build step)
 docs/         Architecture, client setup, knowledge base, known issues, guidelines
 reference/    External blueprints (Honcho, Obsidian) — reconstruction-grade specs
 business/     Project scope, stakeholders, success criteria
-scripts/      install.sh / start.sh
+scripts/      server.sh (one-script lifecycle) + deploy-new-server.sh + client/ helpers
 docker-compose.yml   CouchDB + backend
 ```
 

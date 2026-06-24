@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserver
 
 from . import dikw, events, hermes, projects, search, versioning
 from .config import settings
@@ -25,8 +27,11 @@ class _Handler(FileSystemEventHandler):
             return
         if event.event_type not in _MUTATING:
             return
+        # src_path may be bytes or str depending on the platform/watchdog
+        # backend; os.fsdecode normalises both to str.
+        src_path = os.fsdecode(event.src_path)
         try:
-            rel = Path(event.src_path).resolve().relative_to(settings.vaults_root)
+            rel = Path(src_path).resolve().relative_to(settings.vaults_root)
         except ValueError:
             return
         parts = rel.parts
@@ -40,7 +45,7 @@ class _Handler(FileSystemEventHandler):
         if proj is None:
             return
 
-        abs_path = Path(event.src_path)
+        abs_path = Path(src_path)
 
         if str(abs_path).endswith(".md"):
             search.update_file(proj.vault_dir, abs_path)
@@ -63,7 +68,7 @@ class _Handler(FileSystemEventHandler):
             hermes.enqueue(slug, proj.vault_dir, abs_path)
 
 
-_observer: Observer | None = None
+_observer: BaseObserver | None = None
 
 
 def start() -> None:

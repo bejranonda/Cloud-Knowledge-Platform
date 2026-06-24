@@ -5,6 +5,8 @@ Git time-series metadata. See docs/dikw-t.md for the conceptual model.
 """
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from .. import dikw
@@ -14,7 +16,7 @@ router = APIRouter(prefix="/api/projects", tags=["dikw"])
 
 
 @router.get("/{slug}/dikw")
-def dikw_summary(slug: str) -> dict:
+def dikw_summary(slug: str) -> dict[str, Any]:
     proj = proj_or_404(slug)
     data = dikw.summarise(proj.vault_dir)
     return {"project": proj.slug, **data}

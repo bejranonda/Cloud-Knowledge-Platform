@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+
 import pytest
 
 # ── env vars MUST be set before the app modules are imported ──────────────────
@@ -29,8 +30,8 @@ def client(tmp_path_factory):
     os.environ["CKP_HERMES_BIN"] = "/bin/true"
 
     # Import app AFTER env vars are set.
-    from fastapi.testclient import TestClient
     from app.main import app
+    from fastapi.testclient import TestClient
 
     with TestClient(app) as c:
         yield c

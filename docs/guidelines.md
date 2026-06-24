@@ -16,8 +16,19 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
 ## Code
 - Python 3.11+, FastAPI, async where it buys something, sync where it's simpler.
 - No premature abstractions: keep each module < ~300 lines; split only when a second consumer appears.
-- Type-hint every public function; run `ruff` + `mypy --strict` on backend.
+- Type-hint every public function. `ruff` and `mypy --strict backend/app` are **CI-enforced gates** (blocking) — green locally before you push: `ruff check backend && mypy --strict backend/app`.
 - Secrets only via env vars (`CKP_*`) — never commit `.env`.
+
+## Path safety
+- Any user-supplied path that resolves to a file in a vault MUST go through a
+  containment-checked helper: `util.safe_path` (API) or `webdav._safe_path`
+  (WebDAV). Both resolve the path and verify it with `Path.is_relative_to(vault)`.
+- **Never** confine a path with a string prefix (`str(p).startswith(str(vault))`).
+  Sibling vaults can share a name prefix (`proj-a` vs `proj-a-secret`), so a
+  prefix check lets `../proj-a-secret/...` escape the vault. This was issue #21,
+  fixed in v0.5.1 — don't reintroduce the pattern.
+- `.git` is matched against the *resolved* path, not the raw input, so writes
+  can never corrupt a project's history repo.
 
 ## Adding a project
 1. `POST /api/projects` with `{slug, display_name}`.
@@ -54,7 +65,8 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
   you.
 
 ## Continuous validation
-- After any non-trivial change run `./.venv/bin/pytest backend/tests -q` until green twice in a row.
+- After any non-trivial change run the same three gates CI runs, until clean:
+  `ruff check backend` → `mypy --strict backend/app` → `./.venv/bin/pytest backend/tests -q` (green twice in a row).
 - The full suite now includes frontend smoke tests (`test_frontend.py`) that verify the static bundle is served and `app.js` passes `node --check`. Keep them lightweight — deeper UI tests wait until the UI stabilises.
 - `grep -r "Info → Knowledge" docs/ || true` should be empty — the canonical phrasing is the full DIKW-T chain.
 - `grep -rn "inbox/\|notes/\|knowledge/\|wisdom/" docs/ business/ reference/` sanity-checks that docs describe all four stages, not a subset.
