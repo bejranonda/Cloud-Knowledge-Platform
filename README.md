@@ -1,6 +1,6 @@
 # Cloud Knowledge Platform
 
-A self-hosted PKM + sync gateway that replaces paid Obsidian Sync with a 100% free stack on Ubuntu. It synchronises Obsidian vaults across devices, versions every change in Git, exposes a Web-App for admin/data management, and dispatches new "Info" notes to the **Hermes Agent** which converts them into structured "Knowledge".
+**Cloud Knowledge Platform** is a self-hosted **Obsidian Sync alternative** — a 100% free, Git-versioned sync gateway for your Obsidian vaults on Ubuntu. It synchronises Markdown notes across devices over LiveSync (CouchDB) or WebDAV, versions every change in Git, exposes a Web-App for admin/data management, and dispatches new notes to the **Hermes Agent**, which synthesises them into structured Knowledge — the DIKW-T pipeline.
 
 The pipeline is organised around the **DIKW-T** pyramid
 (**D**ata → **I**nformation → **K**nowledge → **W**isdom + **T**ime) —
