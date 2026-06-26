@@ -49,7 +49,7 @@ runtime components that move files between those stages.
 | Component | Purpose |
 |---|---|
 | **CouchDB** | Stores the canonical vault as JSON docs; speaks the replication protocol that Obsidian LiveSync uses on every client. One DB per project for isolation. |
-| **CouchDB → FS materialiser** | The backend subscribes to the `_changes` feed and writes the current state of each note to `vaults/<project>/` on disk so Obsidian-on-server and Hermes can read plain Markdown. |
+| **CouchDB → FS materialiser** | The backend subscribes to the `_changes` feed and writes the current state of each note to `vaults/<project>/` on disk so Obsidian-on-server and Hermes can read plain Markdown. Every doc path is containment-checked (`sync_monitor._safe_target`, v0.5.2): it must resolve inside the project vault and may not touch `.git/` or `.ckp/`, so a sync client cannot corrupt the Git repo or search index. |
 | **Watcher** | `watchdog` observes `vaults/<project>/inbox/` (Info) and fires Hermes; observes the whole vault and fires the Git committer. |
 | **Git versioner** | Each project has its own Git repo co-located with the vault. Commits are batched (debounced ~2 s) with author = sync source + timestamp message. |
 | **Hermes dispatcher** | Subprocess invocation of the pre-installed Hermes Agent with the new Info file, capturing stdout/stderr and writing the result to `vaults/<project>/knowledge/`. |
@@ -80,10 +80,11 @@ templates) and exposes them via `/api/projects/{slug}/obsidian/*`. The
 Web-App uses this to show recent files, starred items, and plugin state
 without duplicating Obsidian's data model.
 
-## 5. Security boundaries
+## 6. Security boundaries
 
 - CouchDB bound to localhost, reverse-proxied by Caddy/Nginx with HTTPS + Basic Auth per project user.
 - Backend runs as unprivileged user; Hermes invoked with a restricted working dir.
 - Admin mutations (create project, write/delete/move note, restore, Hermes retrigger, WebDAV writes) require `Authorization: Bearer <CKP_ADMIN_TOKEN>` when the env var is set. WebDAV additionally accepts the same token as HTTP Basic password.
+- **Vault containment** is enforced on every write path — API (`util.safe_path`), WebDAV (`webdav._safe_path`), and LiveSync→disk (`sync_monitor._safe_target`). All resolve the target with `Path.is_relative_to(vault)` (never a string prefix) and reject `.git`/`.ckp`, so a project-scoped token or sync client cannot escape its own vault or corrupt the repo/index. See issues #21 (v0.5.1) and #24 (v0.5.2).
 - SSE stream (`/api/events`) is read-only and carries fs / hermes / project events.
 - Git repos are local only by default; optional `git push` to private remote is per-project config.

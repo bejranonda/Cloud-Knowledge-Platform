@@ -80,7 +80,13 @@ prefix (`proj-a` / `proj-a-secret`), the prefix test treated a sibling vault as
 "inside" and let a project token escape via `../`. The lesson: filesystem
 containment must be an honest predicate — `Path.is_relative_to(vault)` — and the
 sensitive parts (`.git`) must be matched against the *resolved* path, never the
-raw input. A string prefix is not a boundary.
+raw input. A string prefix is not a boundary. The corollary, learned in v0.5.2:
+**audit *every* path that turns external input into a vault file, not just the
+one that bit you.** Fixing the API left the LiveSync→disk materialiser
+(`sync_monitor._materialise`) still on a weaker `".." in parts` guard, able to
+write into `.git/`/`.ckp/`. There are exactly three such write paths
+(`util.safe_path`, `webdav._safe_path`, `sync_monitor._safe_target`) and a
+boundary fix is not done until all of them share it.
 
 **A convention that CI doesn't run is a wish, not a rule.** `ruff` + `mypy --strict`
 were declared mandatory in the guidelines but CI ran ruff with `|| true` and never

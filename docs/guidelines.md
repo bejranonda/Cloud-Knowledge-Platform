@@ -20,15 +20,21 @@ When adding code, tests, or docs, state which stage(s) are affected. See `docs/d
 - Secrets only via env vars (`CKP_*`) — never commit `.env`.
 
 ## Path safety
-- Any user-supplied path that resolves to a file in a vault MUST go through a
-  containment-checked helper: `util.safe_path` (API) or `webdav._safe_path`
-  (WebDAV). Both resolve the path and verify it with `Path.is_relative_to(vault)`.
+- Any externally-supplied path that resolves to a file in a vault MUST go
+  through a containment-checked helper. There are **three** such write paths and
+  they must all stay guarded:
+  - `util.safe_path` — the JSON API.
+  - `webdav._safe_path` — the WebDAV endpoint.
+  - `sync_monitor._safe_target` — the LiveSync/CouchDB `_changes` → disk
+    materialiser (added v0.5.2).
+  Each resolves the path and verifies it with `Path.is_relative_to(vault)`.
 - **Never** confine a path with a string prefix (`str(p).startswith(str(vault))`).
   Sibling vaults can share a name prefix (`proj-a` vs `proj-a-secret`), so a
   prefix check lets `../proj-a-secret/...` escape the vault. This was issue #21,
   fixed in v0.5.1 — don't reintroduce the pattern.
 - `.git` is matched against the *resolved* path, not the raw input, so writes
-  can never corrupt a project's history repo.
+  can never corrupt a project's history repo. The sync path additionally rejects
+  `.ckp` (the local search index) — issue #24, v0.5.2.
 
 ## Adding a project
 1. `POST /api/projects` with `{slug, display_name}`.
